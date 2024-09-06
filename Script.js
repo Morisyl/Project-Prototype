@@ -46,15 +46,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
   
-// Function to show/hide sections
+/// Function to show a section based on ID
 function showSection(sectionId) {
-    // Logic to show or hide sections as needed
     console.log("Showing section: " + sectionId);
+    // Logic to show/hide sections based on sectionId
+    const sections = document.querySelectorAll('.section'); // Assuming all sections have a class of 'section'
+    sections.forEach(section => {
+        if (section.id === sectionId) {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+    });
 }
 
 // Function to check if user is logged in before showing certain sections
 function checkLogin(sectionId) {
-    if (localStorage.getItem('userLoggedIn')) {
+    const token = localStorage.getItem('token');
+    if (token && isValidToken(token)) {
         showSection(sectionId);
     } else {
         alert("You need to log in to access this section.");
@@ -62,35 +71,62 @@ function checkLogin(sectionId) {
     }
 }
 
-// Function to log out the user
-function logoutUser() {
-    localStorage.removeItem('userLoggedIn');
-    localStorage.removeItem('token'); // Remove token if stored for auth purposes
+// Event listener for the logout link click event
+document.getElementById('logout-link')?.addEventListener('click', async function (event) {
+    event.preventDefault(); // Prevent default anchor behavior
 
-    // Hide the logout link and show the register link
-    document.getElementById('logout-link').classList.add('hidden');
-    document.getElementById('register-link').classList.remove('hidden');
+    // Call the logout function when the user clicks the logout link
+    await logoutUser();
+});
 
-    alert("You have been logged out.");
-    window.location.href = '#home';  // Optional: Redirect to home page
-}
-
-// Simulate login
-function userLoggedIn() {
-    // Store login status
+function userLoggedIn(token) {
     localStorage.setItem('userLoggedIn', 'true');
-
-    // Hide register link and show the logout link
+    localStorage.setItem('token', token);  // Store JWT or token
     document.getElementById('register-link').classList.add('hidden');
     document.getElementById('logout-link').classList.remove('hidden');
+    showSection('home'); // Show home section
 }
 
+async function logoutUser() {
+    const token = localStorage.getItem('token'); // Retrieve the token from localStorage
+
+    try {
+        // Make an API call to log out (blacklist token on the server-side)
+        await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        // If successful, clear localStorage and update UI
+        localStorage.removeItem('userLoggedIn');
+        localStorage.removeItem('token');
+        alert("You have been logged out.");
+
+        // Update the UI to reflect the logged-out state
+        document.getElementById('logout-link').classList.add('hidden');
+        document.getElementById('register-link').classList.remove('hidden');
+
+        // Redirect to the home section
+        showSection('home');
+    } catch (error) {
+        console.error('Error during logout:', error);
+        alert("There was an issue logging out. Please try again.");
+    }
+}
+
+// Check for user login status on page load
 document.addEventListener("DOMContentLoaded", function() {
-    // Check if user is logged in
-    if (localStorage.getItem('userLoggedIn')) {
-        userLoggedIn(); // If logged in, update the UI accordingly
+    if (localStorage.getItem('userLoggedIn') && localStorage.getItem('token')) {
+        // If the user is logged in, make sure to reflect that in the UI
+        userLoggedIn(localStorage.getItem('token'));
+    } else {
+        // If the user is not logged in, show the registration section
+        showSection('register');
     }
 });
+
 
  // Event listener for register form submission
 document.getElementById('register-form')?.addEventListener('submit', async function (event) {
@@ -135,10 +171,7 @@ document.getElementById('register-form')?.addEventListener('submit', async funct
         showNotification('There was an error with your registration. Please try again.', 'error');
     }
 });
-
-
     // Event listeners for login options
-  
     document.getElementById('register-link')?.addEventListener('click', function (event) {
         event.preventDefault();
         showLoginOptions('register');
@@ -163,26 +196,7 @@ function checkLogin(sectionId) {
     }
 }
 
-// Function to handle form steps in booking
-function nextStep() {
-    const currentStep = document.querySelector('.step.active');
-    const nextStep = currentStep.nextElementSibling;
-    if (nextStep) {
-        currentStep.classList.add('hidden');
-        nextStep.classList.remove('hidden');
-        nextStep.classList.add('active');
-    }
-}
 
-function previousStep() {
-    const currentStep = document.querySelector('.step.active');
-    const previousStep = currentStep.previousElementSibling;
-    if (previousStep) {
-        currentStep.classList.add('hidden');
-        previousStep.classList.remove('hidden');
-        previousStep.classList.add('active');
-    }
-}
 // Function to handle booking form submission
 document.getElementById('booking-form')?.addEventListener('submit', async function (event) {
     event.preventDefault();
@@ -195,7 +209,7 @@ document.getElementById('booking-form')?.addEventListener('submit', async functi
 
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
-    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const gender = document.getElementById('gender').value;
     const homePhone = document.getElementById('home-phone').value;
     const officePhone = document.getElementById('office-phone').value;
     const service = document.getElementById('service').value;
@@ -219,13 +233,39 @@ document.getElementById('booking-form')?.addEventListener('submit', async functi
             }),
         });
         const data = await response.text();
-        showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
-        document.getElementById('booking-form').reset();
+    
+        if (response.ok) {
+            showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
+            document.getElementById('booking-form').reset();
+        } else {
+            throw new Error(data);  // This will pass the error from the server
+        }
     } catch (error) {
         console.error('Error:', error);
         showNotification('There was an error with your booking. Please try again.', 'error');
-    }
+    }    
 });
+
+// Function to handle form steps in booking
+function nextStep() {
+    const currentStep = document.querySelector('.step.active');
+    const nextStep = currentStep.nextElementSibling;
+    if (nextStep) {
+        currentStep.classList.add('hidden');
+        nextStep.classList.remove('hidden');
+        nextStep.classList.add('active');
+    }
+}
+
+function previousStep() {
+    const currentStep = document.querySelector('.step.active');
+    const previousStep = currentStep.previousElementSibling;
+    if (previousStep) {
+        currentStep.classList.add('hidden');
+        previousStep.classList.remove('hidden');
+        previousStep.classList.add('active');
+    }
+}
 
 // Function to handle enquiry form submission
 document.getElementById('enquiries-form')?.addEventListener('submit', async function (event) {
@@ -386,38 +426,201 @@ function showLoginOptions(option) {
 // Function to show payment info based on selected payment method
 function showPaymentInfo() {
     var paymentMethod = document.getElementById("payment-method").value;
+    console.log(paymentMethod);
+    
     var creditCardInfo = document.getElementById("credit-card-info");
     var paypalInfo = document.getElementById("paypal-info");
     var bankTransferInfo = document.getElementById("bank-transfer-info");
+    var mpesaInfo = document.getElementById("mpesa-info");
 
+    // Hide all payment info sections
     creditCardInfo.classList.add("hidden");
     paypalInfo.classList.add("hidden");
     bankTransferInfo.classList.add("hidden");
+    mpesaInfo.classList.add("hidden");
 
+    // Show the relevant payment info section
     if (paymentMethod === "credit-card") {
         creditCardInfo.classList.remove("hidden");
     } else if (paymentMethod === "paypal") {
         paypalInfo.classList.remove("hidden");
     } else if (paymentMethod === "bank-transfer") {
         bankTransferInfo.classList.remove("hidden");
+    } else if (paymentMethod === "mpesa") {
+        mpesaInfo.classList.remove("hidden");
     }
+}
+
+// Function to retrieve user details
+async function getUserDetails(username) {
+    try {
+        const response = await fetch(`/api/get-user/${username}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return { userId: data.userId };
+        } else {
+            console.error('Error fetching user details:', data.message);
+            return { userId: null };
+        }
+    } catch (error) {
+        console.error('Error fetching user details:', error);
+        return { userId: null };
+    }
+}
+
+// Function to retrieve booking details
+async function getBookingDetails(userId) {
+    try {
+        const response = await fetch(`/api/get-booking-details/${userId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return {
+                bookingId: data.bookingId,
+                paymentAmount: data.paymentAmount
+            };
+        } else {
+            console.error('Error fetching booking details:', data.message);
+            return { bookingId: null, paymentAmount: null };
+        }
+    } catch (error) {
+        console.error('Error fetching booking details:', error);
+        return { bookingId: null, paymentAmount: null };
+    }
+}
+
+// Function to submit payment based on selected method
+async function submitPayment() {
+    const paymentMethod = document.getElementById("payment-method").value;
+    
+    // Retrieve user ID
+    const { userId } = await getUserDetails(username);
+    if (!userId) {
+        alert('Unable to retrieve user details.');
+        return;
+    }
+
+    // Retrieve booking ID and payment amount
+    const { bookingId, paymentAmount } = await getBookingDetails(userId);
+    if (!bookingId || !paymentAmount) {
+        alert('Unable to retrieve booking details.');
+        return;
+    }
+
+    const paymentStatus = 'completed'; // Example status, adjust as needed
+
+    const paymentData = {
+        bookingId,
+        paymentMethod,
+        paymentStatus,
+        paymentAmount
+    };
+
+    // Handle payment based on selected method
+    switch (paymentMethod) {
+        case 'credit-card':
+            const cardNumber = document.getElementById('card-number').value;
+            const cardExpiry = document.getElementById('card-expiry').value;
+            const cardCvc = document.getElementById('card-cvc').value;
+            if (!cardNumber || !cardExpiry || !cardCvc) {
+                alert('Please provide all required credit card details.');
+                return;
+            }
+            await saveCreditCardPayment(paymentData, cardNumber, cardExpiry, cardCvc);
+            break;
+
+        case 'paypal':
+            // Optionally handle PayPal specific logic or redirect
+            await savePayPalPayment(paymentData);
+            break;
+
+        case 'bank-transfer':
+            const bankName = document.getElementById('bank-name').value;
+            const accountNumber = document.getElementById('account-number').value;
+            const sortCode = document.getElementById('sort-code').value;
+            const phoneNumber = document.getElementById('phone-number').value;
+            const transactionCost = document.getElementById('transaction-cost').value;
+            if (!bankName || !accountNumber || !sortCode || !phoneNumber || !transactionCost) {
+                alert('Please provide all required bank transfer details.');
+                return;
+            }
+            await saveBankTransferDetails(paymentData, bankName, accountNumber, sortCode, phoneNumber, transactionCost);
+            break;
+
+        case 'mpesa':
+            const mpesaNumber = document.getElementById('mpesa-number').value;
+            const transactionCode = document.getElementById('transaction-code').value;
+            if (!mpesaNumber || !mpesaTransactionCode) {
+                alert('Please provide all required Mpesa details.');
+                return;
+            }
+            await saveMpesaPayment(paymentData, mpesaNumber, transactionCode);
+            break;
+
+        default:
+            alert('Invalid payment method selected.');
+    }
+}
+
+// Helper function to get headers with token
+function getHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    };
+}
+
+// Show and hide loader
+function showLoader() {
+    document.getElementById('loader').classList.remove('hidden');
+}
+
+function hideLoader() {
+    document.getElementById('loader').classList.add('hidden');
+}
+
+// Redirect to login if token is missing
+function checkToken() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Session expired, redirecting to login...');
+        window.location.href = '/login';
+        return false;
+    }
+    return true;
+}
+
+// Validate credit card info (basic validation)
+function validateCreditCard(cardNumber, expiryDate, cvc) {
+    if (cardNumber.length !== 16 || isNaN(cardNumber)) {
+        alert('Invalid credit card number');
+        return false;
+    }
+    if (!expiryDate.match(/^\d{2}\/\d{2}$/)) {
+        alert('Invalid expiry date format. Use MM/YY.');
+        return false;
+    }
+    if (cvc.length !== 3 || isNaN(cvc)) {
+        alert('Invalid CVC');
+        return false;
+    }
+    return true;
 }
 
 // Handle payment
 async function makePayment(bookingId, paymentMethod, paymentStatus, paymentAmount) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in first');
-        return;
-    }
+    if (!checkToken()) return;
+    showLoader();
 
     try {
         const response = await fetch('/payments', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: getHeaders(),
             body: JSON.stringify({ bookingId, paymentMethod, paymentStatus, paymentAmount }),
         });
 
@@ -429,24 +632,22 @@ async function makePayment(bookingId, paymentMethod, paymentStatus, paymentAmoun
         }
     } catch (error) {
         console.error('Error processing payment:', error);
+    } finally {
+        hideLoader();
     }
 }
 
 // Handle credit card payment
 async function saveCreditCardPayment(paymentId, cardNumber, expiryDate, cvc) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in first');
-        return;
-    }
+    if (!checkToken()) return;
+    if (!validateCreditCard(cardNumber, expiryDate, cvc)) return;
+
+    showLoader();
 
     try {
         const response = await fetch('/credit-card-payments', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: getHeaders(),
             body: JSON.stringify({ paymentId, cardNumber, expiryDate, cvc }),
         });
 
@@ -458,24 +659,21 @@ async function saveCreditCardPayment(paymentId, cardNumber, expiryDate, cvc) {
         }
     } catch (error) {
         console.error('Error saving credit card payment:', error);
+    } finally {
+        hideLoader();
     }
 }
 
 // Handle bank transfer details
 async function saveBankTransferDetails(paymentId, bankName, accountNumber, sortCode) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in first');
-        return;
-    }
+    if (!checkToken()) return;
+
+    showLoader();
 
     try {
         const response = await fetch('/bank-transfer-details', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: getHeaders(),
             body: JSON.stringify({ paymentId, bankName, accountNumber, sortCode }),
         });
 
@@ -487,24 +685,21 @@ async function saveBankTransferDetails(paymentId, bankName, accountNumber, sortC
         }
     } catch (error) {
         console.error('Error saving bank transfer details:', error);
+    } finally {
+        hideLoader();
     }
 }
 
 // Handle PayPal payment
 async function savePayPalPayment(paymentId, transactionId, paypalStatus) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in first');
-        return;
-    }
+    if (!checkToken()) return;
+
+    showLoader();
 
     try {
         const response = await fetch('/paypal-payments', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            headers: getHeaders(),
             body: JSON.stringify({ paymentId, transactionId, paypalStatus }),
         });
 
@@ -516,5 +711,33 @@ async function savePayPalPayment(paymentId, transactionId, paypalStatus) {
         }
     } catch (error) {
         console.error('Error saving PayPal payment:', error);
+    } finally {
+        hideLoader();
+    }
+}
+
+// Handle Mpesa payment
+async function saveMpesaPayment(paymentId, mpesaNumber,transactionCode) {
+    if (!checkToken()) return;
+
+    showLoader();
+
+    try {
+        const response = await fetch('/mpesa-payments', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ paymentId, mpesaNumber, transactionCode }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Mpesa payment saved successfully');
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error saving Mpesa payment:', error);
+    } finally {
+        hideLoader();
     }
 }

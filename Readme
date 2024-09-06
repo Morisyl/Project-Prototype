@@ -1,0 +1,1248 @@
+DOCUMENTATION 
+
+README FILE
+
+# Timothy's Software Firm
+
+## Overview
+
+A website to help Timothy start his software firm by allowing clients to:
+- View services
+- Book services
+- Make enquiries
+- Manage client information and payments
+
+## Technologies
+
+- HTML
+- CSS
+- JavaScript
+
+## Usage
+
+1. **Clone the Repository**
+   ```sh
+   git clone https://github.com/username/repository-name.git
+   cd repository-name
+
+
+
+
+
+  ### Example README File Content
+
+Here's an example of what your `README.md` might look like:
+
+```markdown
+# Timothy's Software Firm
+
+Welcome to the project repository for Timothy's Software Firm Online Client 
+Servicing and Management Platform.
+
+## Project Overview
+
+This project is a website designed to help Timothy, a recent graduate, to start his 
+software firm. The website allows clients to:
+- View services offered
+- Book a service
+- Make enquiries
+- Manage client information and payments
+
+## Technologies Used
+
+- **HTML**: For structuring the web pages.
+- **CSS**: For styling the web pages.
+- **JavaScript**: For adding interactivity to the web pages.
+
+## How to Use
+
+1. **Clone the Repository**
+   ```sh
+   git clone https://github.com/username/repository-name.git
+   cd repository-name 
+
+
+
+   CSS CODE EXPLANATION
+
+   const clients = [...]: An array of client objects for demonstration purposes.
+function displayClients() {...}: This function dynamically creates and displays a list of clients on the webpage.
+const clientList = document.getElementById('client-list'): Selects the element with the ID client-list.
+clientList.innerHTML = '': Clears any existing content inside the client-list element.
+clients.forEach(client => {...}): Iterates over each client in the clients array.
+const clientDiv = document.createElement('div'): Creates a new div element.
+clientDiv.textContent = ${client.name}: ${client.project}``: Sets the text content of the new div to 
+display the client's name and project.
+clientList.appendChild(clientDiv): Adds the new div to the client-list element.
+document.addEventListener('DOMContentLoaded', displayClients): Calls the displayClients function once the 
+document's content is fully loaded, ensuring the client list is displayed when the page is first opened.
+Summary
+The JavaScript code handles user interactions by listening for form submissions and preventing the default 
+form behavior, then it provides feedback through alert messages. Additionally, it dynamically updates the 
+client list on the webpage to ensure that the displayed information is always current. This approach makes 
+the website interactive and user-friendly.
+
+
+
+
+1) HTML FILE
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YnoVo Software Developers</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+    <header>
+        <h1>Welcome to YnoVo Software Developers</h1>
+        <!--Navigation bar-->
+        <nav>
+            <ul>
+                <li><a href="#home" onclick="showSection('home')">Home</a></li>
+                <li><a href="#about_us" onclick="showSection('about_us')">About Us</a></li>
+                <li><a href="#services" onclick="showSection('services')">Services</a></li>
+                <li><a href="#booking" onclick="checkLogin('booking')">Booking</a></li>
+                <li><a href="#" id="payment-link" style="display: none;">Payment</a></li>
+                <li><a href="#enquiries" onclick="checkLogin('enquiries')">Enquiries</a></li>
+                <li><a href="#contact_us" onclick="showSection('contact_us')">Contact Us</a></li>
+                <li><a href="#clients" onclick="showSection('clients')">Clients</a></li>
+                <li><a href="#login" onclick="showSection('login')">Sign up/Sign in</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Main Content Sections -->
+        <section id="home" class="section hidden">
+            <h2>Home</h2>
+            <p>YnoVo is a home of experienced Software Developers, committed to providing top-notch 
+	    software solutions tailored to your preference.</p>
+            <p>Ever ready and synchronized, our team is keen on excellence with professional Web-Development.</p> 
+            <p>Client's detailed information is the foundation upon which everything is anchored.</p>
+            <p>We welcome you to interact with our page; you can book or make an inquiry about our services.</p>
+        </section>
+
+        <section id="about_us" class="section hidden">
+            <h2>About Us</h2>
+            <p>We are a dedicated team of software developers committed to excellence.</p>
+            <p>YnoVo is a tech-based company registered in Kenya to enhance Human-Computer Interaction.</p>
+        </section>
+
+        <section id="services" class="section hidden">
+            <h2>Our Services</h2>
+            <ul>
+                <li><a href="#software-Developers" onclick="showSection('software-Developers')">Software Developers</a></li>
+                <li><a href="#web-development" onclick="showSection('web-development')">Web Development</a></li>
+                <li><a href="#securing-networks" onclick="showSection('securing-networks')">Securing Networks</a></li>
+                <li><a href="#consulting" onclick="showSection('consulting')">Consulting</a></li>
+            </ul>
+        </section>
+
+        <section id="software-Engineering" class="section hidden">
+            <h2>Software Development</h2>
+            <p>We offer Dynamic software Development, tailored to meet our clients' needs</p>
+            <img src="/images/Technology.png" alt="Software Development">
+            <nav>
+                <a href="#web-development" onclick="showSection('web-development')">Next: Web Development</a>
+            </nav>
+        </section>
+
+        <section id="web-development" class="section hidden">
+            <h2>Web Development</h2>
+            <p>We research,design and Develope both secured static, Dynamic Websites and Web-based Applications.</p>
+            <img src="path/to/web-development.jpg" alt="Web Development">
+            <nav>
+                <a href="#software-Development" onclick="showSection('software-Development')">Previous: Software Engineering</a> | 
+                <a href="#securing-networks" onclick="showSection('securing-networks')">Next: Securing Networks</a>
+            </nav>
+        </section>
+
+        <section id="securing-networks" class="section hidden">
+            <h2>Securing Networks</h2>
+            <p>We provide robust network security solutions to protect your business from cyber threats and ensure the integrity of your data.</p>
+            <img src="path/to/securing-networks.jpg" alt="Securing Networks">
+            <nav>
+                <a href="#web-development" onclick="showSection('web-development')">Previous: Web Development</a> | 
+                <a href="#consulting" onclick="showSection('consulting')">Next: Consulting</a>
+            </nav>
+        </section>
+
+        <section id="consulting" class="section hidden">
+            <h2>Consulting</h2>
+            <p>Our consulting services help you strategize and implement effective IT solutions to meet your business goals.</p>
+            <img src="path/to/consulting.jpg" alt="Consulting">
+            <nav>
+                <a href="#securing-networks" onclick="showSection('securing-networks')">Previous: Securing Networks</a>
+            </nav>
+        </section>
+
+        <section id="contact_us" class="section hidden">
+            <h2>Contact Us</h2>
+            <p><strong>Tel:</strong> +254 723684352</p>
+            <p><strong>Email:</strong> <a href="mailto:info@ynovosoftwares.co.ke">info@ynovosoftwares.co.ke</a></p>
+            <p><strong>Direction:</strong> China Center 17th floor Suite 15Red, Ngong Road - Nairobi, Kenya</p>
+        </section>
+
+        <section id="booking" class="section hidden">
+            <h2>Book a Service</h2>
+            <div id="notification" class="notification hidden"></div>
+            <form id="booking-form">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+
+                <label for="gender">Gender:</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="radio" id="male" name="gender" value="male" required>
+                    <label for="male">Male</label>
+                    <input type="radio" id="female" name="gender" value="female" required>
+                    <label for="female">Female</label>
+                </div>
+
+                <label for="home-phone">Home Phone:</label>
+                <input type="tel" id="home-phone" name="homePhone" placeholder="Enter your home phone number">
+
+                <label for="office-phone">Office Phone:</label>
+                <input type="tel" id="office-phone" name="officePhone" placeholder="Enter your office phone number">
+
+                <label for="service">Service:</label>
+                <select id="service" name="service" required>
+                    <option value="" disabled selected>Select a service</option>
+                    <option value="software-Development">Software Development</option>
+                    <option value="web-development">Web Development</option>
+                    <option value="network-security">Network Security</option>
+                    <option value="consulting">Consulting</option>
+                </select>
+
+                <label for="details">Details:</label>
+                <textarea id="details" name="details" rows="4" placeholder="Provide more details about your booking" required></textarea>
+
+                <button type="submit">Submit Booking</button>
+
+            </form>
+        </section>
+
+        <section>
+            <!--Payment Section-->
+        <div id="payment-section" style="display:none;"></div>
+            <h2>Payment</h2>
+            <form id="payment-form;">
+                
+                    <label for="name"required:></label>
+                    <input type="text" id="name" placeholder="Enter your full Names" required>
+                    <br>
+                    <label for="email" required:></label>
+                    <input type="text" id="email" placeholder="Enter email">
+                    <br>
+                    <label for="service" required:></label>
+                    <input type="text" id="service" placeholder="Enter Service booked" required>
+                    <br>
+                    <label for="Amount" required:></label>
+                    <input type="text" id="Amount" placeholder="Enter Correct Amount" required>
+                    <br>
+                    <label for="card-number" required:></label>
+                    <input type="text" id="card-number"placeholder="Enter Your CardNumber" required>
+                    <br>
+                    <label for="expiry-date">expiry-date:</label>
+                    <input type="text" id="expiry-date"placeholder="Enter Expiry Date" required>
+                    <br>
+                    <button type="submit">Pay Now</button>
+                
+            </form>
+        </div>
+        </section>
+
+        <section id="enquiries" class="section hidden">
+            <h2>Enquiries</h2>
+            <div id="notification-enquiries" class="notification hidden"></div>
+            <form id="enquiries-form">
+                <label for="enquiry-name">Name:</label>
+                <input type="text" id="enquiry-name" name="name" placeholder="Enter your name" required>
+
+                <label for="enquiry-email">Email:</label>
+                <input type="email" id="enquiry-email" name="email" placeholder="Enter your email address" required>
+
+                <label for="enquiry-message">Message:</label>
+                <textarea id="enquiry-message" name="message" rows="4" placeholder="Enter your message" required></textarea>
+
+                <button type="submit">Submit Enquiry</button>
+            </form>
+        </section>
+
+        <section id="login" class="section hidden">
+            <h2>Login</h2>
+            <form id="login-form">
+                <label for="login-email">Email:</label>
+                <input type="text" id="login-email" name="email" required>
+        
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" name="password" required>
+        
+                <button type="submit">Login</button>
+            </form>
+            <button id="logout-btn" class="hidden">Logout</button>
+            <div id="login-options">
+                <a href="#" id="forgot-password-link">Forgot Password?</a>
+                <a href="#" id="register-link">Register</a>
+            </div>
+        
+            <section id="forgot-password" class="form-section hidden">
+                <h3>Forgot Password</h3>
+                <form id="forgot-password-form">
+                    <label for="forgot-email">Email:</label>
+                    <input type="email" id="forgot-email" name="email" placeholder="Enter your email address" required>
+        
+                    <button type="submit">Reset Password</button>
+                </form>
+            </section>
+        
+            <section id="register" class="form-section hidden">
+                <h3>Register</h3>
+                <form id="register-form">                                                                                                                                                               
+                    <label for="register-username">Username:</label>
+                    <input type="text" id="register-username" name="username" required>
+        
+                    <label for="register-email">Email:</label>
+                    <input type="email" id="register-email" name="email" required>
+
+                    <label for="register-password">Password:</label>
+                    <input type="password" id="register-password" name="password" required>
+        
+                    <button type="submit">Register</button>
+                </form>
+            </section>
+        </section>
+        
+
+        <section id="clients" class="section hidden">
+            <h2>Clients</h2>
+            <div id="client-list"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+2) SCRIPT.JS FILE
+
+const { response } = require("express");
+
+document.addEventListener('DOMContentLoaded', function () {
+    displayClients();
+    showSection('home'); // Show the home section by default on page load
+    shiftSectionsAutomatically(); // Start shifting through sections automatically
+
+    // Check if the user is logged in
+    const isLoggedIn = localStorage.getItem('loggedIn') === 'true';
+    toggleForms(isLoggedIn);
+
+    // Event listener for login form submission
+    document.getElementById('login-form')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json();
+
+            if (data.token) {
+                localStorage.setItem('loggedIn', 'true');
+                showNotification('Login successful!', 'success');
+                showSection('home');
+                toggleForms(true);
+            } else {
+                showNotification('Invalid username or password. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('There was an error with your login. Please try again.', 'error');
+        }
+    });
+
+    // Event listener for logout
+    document.getElementById('logout-btn')?.addEventListener('click', function () {
+        localStorage.setItem('loggedIn', 'false');
+        showNotification('Logged out successfully!', 'success');
+        showSection('home');
+        toggleForms(false);
+    });
+
+    // Event listener for forgot password form submission
+    document.getElementById('forgot-password-form')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const email = document.getElementById('forgot-email').value;
+
+        try {
+            const response = await fetch('/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+            await response.json();
+            showNotification(`Password reset link has been sent to ${email}`, 'success');
+            showLoginOptions('login'); // Return to login after password reset
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('There was an error sending the password reset. Please try again.', 'error');
+        }
+    });
+
+    // Event listener for register form submission
+    document.getElementById('register-form')?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+        const email = document.getElementById('register-email').value;
+
+        try {
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    email,
+                }),
+            });
+            const data = await response.json();
+            showNotification(`Registration successful for ${username}. Welcome!`, 'success');
+-            showLoginOptions('login'); // Return to login after registration
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('There was an error with your registration. Please try again.', 'error');
+        }
+    });
+
+    // Event listeners for login options
+    document.getElementById('forgot-password-link')?.addEventListener('click', function (event) {
+        event.preventDefault();
+        showLoginOptions('forgot-password');
+    });
+
+    document.getElementById('register-link')?.addEventListener('click', function (event) {
+        event.preventDefault();
+        showLoginOptions('register');
+    });
+
+    document.getElementById('login-link')?.addEventListener('click', function (event) {
+        event.preventDefault();
+        showLoginOptions('login');
+    });
+
+    // Initial section to show
+    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'login');
+});
+
+// Function to check login status before showing section
+function checkLogin(sectionId) {
+    if (localStorage.getItem('loggedIn') !== 'true') {
+        showNotification('You must be logged in to access this section.', 'error');
+        showSection('login'); // Show the login section
+    } else {
+        showSection(sectionId);
+    }
+}
+
+// Function to handle booking form submission
+const bookingForm = document.getElementById('booking-form');
+const paymentSection = document.getElementById('payment-section');
+const paymentLink =document.getElementById('payment-link');
+
+document.getElementById('booking-form')?.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    if (localStorage.getItem('loggedIn') !== 'true') {
+        showNotification('You must be logged in to make a booking.', 'error');
+        showSection('login'); // Show the login section
+        return;
+    }
+    //Simulate a booking success(In real app,send the data to the server)
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const homePhone = document.getElementById('home-phone').value;
+    const officePhone = document.getElementById('office-phone').value;
+    const service = document.getElementById('service').value;
+    const details = document.getElementById('details').value;
+    
+    try {
+        const response = await fetch('/booking', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                gender,
+                homePhone,
+                officePhone,
+                service,
+                details,
+            }),
+        });
+        const data = await response.text();
+        showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
+        document.getElementById('booking-form').reset();
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error with your booking. Please try again.', 'error');
+    }
+});
+
+//Selecting the payment form element
+const paymentForm=document.getElementById('payment-form');
+const paymentMessage=document.getElementById('payment-message');
+
+
+//Adding an event listener to handle form submission
+paymentForm.addEventListener('submit', async function(event) {
+    event.preventDefault(); //preventing the form submitting the default way
+
+    //Gather Form data
+    const cardNumber = document.getElementById('card-number').value;
+    const expiryDate = document.getElementById('expiry-date').value;
+
+    //prepare the data to be sent to the server
+    const paymentData={
+        cardNumber: cardNumber,
+        expiryDate:expiryDate
+    };
+        try{
+            //send the payment data to the server using a POST request
+            const response = await fetch('/process-payment',{
+                method: 'POST',
+                headers: {
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify(paymentData)
+
+            });
+
+            //parse the server response
+            const result =await response.json();
+
+            if (response.ok){
+                //if payment is successful
+                paymentMessage.textContent = 'payment was successful';
+
+            }else{
+                //if payment fails
+                paymentMessage.textContent = `payment failed: ${result.message}`;
+            }
+        }catch(error) {
+            //Handle any errors that occur  during fetch
+            paymentMessage.textContent = `Error: ${error.message}`;
+        }
+});
+
+// Function to handle enquiry form submission
+document.getElementById('enquiries-form')?.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    if (localStorage.getItem('loggedIn') !== 'true') {
+        showNotification('You must be logged in to make an enquiry.', 'error');
+        showSection('login'); // Show the login section
+        return;
+    }
+
+    const name = document.getElementById('enquiry-name').value;
+    const email = document.getElementById('enquiry-email').value;
+    const message = document.getElementById('enquiry-message').value;
+
+    try {
+        const response = await fetch('/enquiries', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                message,
+            }),
+        });
+        const data = await response.text();
+        showNotification(`Thank you ${name} for your enquiry! We will respond to you at ${email}.`, 'success');
+        document.getElementById('enquiries-form').reset();
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error with your enquiry. Please try again.', 'error');
+    }
+});
+
+// Function to dynamically update client list (for demonstration purposes)
+const clients = [
+    { name: 'Client A', project: 'Web Development' },
+    { name: 'Client B', project: 'Mobile Development' },
+];
+
+function displayClients() {
+    const clientList = document.getElementById('client-list');
+    if (clientList) {
+        clientList.innerHTML = '';
+        clients.forEach(client => {
+            const clientDiv = document.createElement('div');
+            clientDiv.textContent = `${client.name}: ${client.project}`;
+            clientList.appendChild(clientDiv);
+        });
+    }
+}
+
+// Function to show and hide sections
+function showSection(sectionId) {
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(section => {
+        section.classList.add('hidden');
+    });
+
+    const sectionToShow = document.getElementById(sectionId);
+    if (sectionToShow) {
+        sectionToShow.classList.remove('hidden');
+    }
+}
+
+// Function to shift sections automatically every 5 seconds
+function shiftSectionsAutomatically() {
+    const links = document.querySelectorAll('header nav ul li a');
+    let currentIndex = 0;
+    const intervalId = setInterval(() => {
+        if (currentIndex >= links.length) {
+            currentIndex = 0;
+        }
+        const sectionId = links[currentIndex].getAttribute('href').substring(1);
+        showSection(sectionId);
+        currentIndex++;
+    }, 5000);
+
+    // Stop shifting when a navigation link is clicked
+    document.addEventListener('click', function (event) {
+        if (event.target.tagName === 'A') {
+            clearInterval(intervalId);
+        }
+    });
+}
+
+// Function to toggle visibility of forms based on login status
+function toggleForms(isLoggedIn) {
+    const bookingSection = document.getElementById('booking');
+    const enquiriesSection = document.getElementById('enquiries');
+    const loginOptions = document.getElementById('login');
+
+    if (isLoggedIn) {
+        bookingSection.classList.remove('hidden');
+        enquiriesSection.classList.remove('hidden');
+        loginOptions.classList.add('hidden');
+        document.getElementById('logout-btn')?.classList.remove('hidden');
+    } else {
+        bookingSection.classList.add('hidden');
+        enquiriesSection.classList.add('hidden');
+        loginOptions.classList.remove('hidden');
+        document.getElementById('logout-btn')?.classList.add('hidden');
+    }
+}
+
+// Function to show notifications
+function showNotification(message, type = 'info') {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.className = `notification ${type}`;
+    notificationDiv.textContent = message;
+
+    document.body.appendChild(notificationDiv);
+
+    // Make the notification visible
+    setTimeout(() => {
+        notificationDiv.classList.add('show');
+    }, 100); // Delay to ensure the notification is added to the DOM
+
+    // Remove the notification after 3 seconds
+    setTimeout(() => {
+        notificationDiv.classList.remove('show');
+        notificationDiv.classList.add('hidden');
+        // Remove the element from DOM after transition ends
+        setTimeout(() => notificationDiv.remove(), 300);
+    }, 3000);
+}
+
+// Function to show login options
+function showLoginOptions(option) {
+    const login = document.getElementById('login');
+    const forgotPassword = document.getElementById('forgot-password');
+    const register = document.getElementById('register');
+
+    login.classList.add('hidden');
+    forgotPassword.classList.add('hidden');
+    register.classList.add('hidden');
+
+    if (option === 'login') {
+        login.classList.remove('hidden');
+    } else if (option === 'forgot-password') {
+        forgotPassword.classList.remove('hidden');
+    } else if (option === 'register') {
+        register.classList.remove('hidden');
+    }
+}
+
+SERVER.JS FILE
+
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
+const path = require('path');
+const helmet = require('helmet');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static(__dirname)); // Serve static files from the root directory
+app.use(helmet()); // Set security headers
+
+// MySQL database connection setup
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('Error connecting to database:', err);
+        return;
+    }
+    console.log('Connected to database');
+
+    // Create tables if they don't exist
+    const createTables = () => {
+        const createBookingsTable = `
+            CREATE TABLE IF NOT EXISTS bookings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                gender ENUM('male', 'female') NOT NULL,
+                home_phone VARCHAR(20),
+                office_phone VARCHAR(20),
+                service VARCHAR(255) NOT NULL,
+                details TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+
+        const CreatePaymentTable = `
+            CREATE TABLE IF NOT EXISTS payment (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                service VARCHAR(255) NOT NULL,
+                details TEXT,
+                Amount VARCHAR(255) NOT NULL,
+                PaymentMethod VARCHAR(255),
+                CardNumber VARCHAR(255),
+                Mpesa_Code VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+        
+        const createEnquiriesTable = `
+            CREATE TABLE IF NOT EXISTS enquiries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+
+        const createUsersTable = `
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+
+        db.query(createBookingsTable, (err) => {
+            if (err) {
+                console.error('Error creating bookings table:', err);
+            } else {
+                console.log('Bookings table ready');
+            }
+        });
+
+        db.query(CreatePaymentTable, (err) => {
+            if (err) {
+                console.error('Error creating payment table:', err);
+            } else {
+                console.log('payment table ready');
+            }
+        });
+        
+        db.query(createEnquiriesTable, (err) => {
+            if (err) {
+                console.error('Error creating enquiries table:', err);
+            } else {
+                console.log('Enquiries table ready');
+            }
+        });
+
+        db.query(createUsersTable, (err) => {
+            if (err) {
+                console.error('Error creating users table:', err);
+            } else {
+                console.log('Users table ready');
+            }
+        });
+    };
+
+    // Call createTables function to ensure tables are created
+    createTables();
+});
+
+// Routes
+// Serve HTML files
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/forgot-password', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Booking route
+app.post('/booking', (req, res) => {
+    const { name, email, gender, homePhone, officePhone, service, details } = req.body;
+    const query = 'INSERT INTO bookings (name, email, gender, home_phone, office_phone, service, details) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [name, email, gender, homePhone, officePhone, service, details], (err) => {
+        if (err) {
+            console.error('Error saving booking:', err);
+            res.status(500).json({ message: 'Error saving booking' });
+        } else {
+            res.json({ message: 'Booking saved successfully' });
+        }
+    });
+});
+
+// Payment route
+app.post('/process-payment', (req, res) => {
+    const { name, email, service, details, Amount, Service, paymentMethod,CardNumber,Mpesa_Code } = req.body;
+    const query = 'INSERT INTO bookings (name, email, service, details, Amount, Service, paymentMethod,CardNumber,Mpesa_Code) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [name, email, service, details, Amount, Service, paymentMethod,CardNumber,Mpesa_Code], (err) => {
+        if (err) {
+            console.error('Error making Payment:', err);
+            res.status(400).json({ message: 'Error making Payment' });
+        } else {
+            res.json({ message: 'Payment made successfully' });
+        }
+    });
+});
+
+// Enquiry route
+app.post('/enquiries', (req, res) => {
+    const { name, email, message } = req.body;
+    const query = 'INSERT INTO enquiries (name, email, message) VALUES (?, ?, ?)';
+    db.query(query, [name, email, message], (err) => {
+        if (err) {
+            console.error('Error saving enquiry:', err);
+            res.status(500).json({ message: 'Error saving enquiry' });
+        } else {
+            res.json({ message: 'Enquiry saved successfully' });
+        }
+    });
+});
+
+// Registration route
+app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+
+    try {
+        // Check if email already exists
+        const checkQuery = 'SELECT * FROM users WHERE email = ?';
+        db.query(checkQuery, [email], async (err, results) => {
+            if (err) {
+                console.error('Error checking existing user:', err);
+                return res.status(500).json({ message: 'Error registering user' });
+            }
+
+            if (results.length > 0) {
+                return res.status(400).json({ message: 'Email already registered' });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
+            db.query(query, [username, email, hashedPassword], (err) => {
+                if (err) {
+                    console.error('Error registering user:', err);
+                    res.status(500).json({ message: 'Error registering user' });
+                } else {
+                    res.json({ message: 'Registration successful' });
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Error hashing password:', err);
+        res.status(500).json({ message: 'Error registering user' });
+    }
+});
+
+// Login route
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    const query = 'SELECT * FROM users WHERE email = ?';
+    db.query(query, [email], async (err, results) => {
+        if (err) {
+            console.error('Error fetching user:', err);
+            return res.status(500).json({ message: 'Error logging in' });
+        }
+
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(400).json({ message: 'Invalid email or password' });
+        }
+
+        const user = results[0];
+
+        try {
+            const match = await bcrypt.compare(password, user.password);
+
+            if (match) {
+                const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+                console.log('Login successful');
+                return res.json({ message: 'Login successful', token });
+            } else {
+                console.log('Password does not match');
+                return res.status(400).json({ message: 'Invalid email or password' });
+            }
+        } catch (err) {
+            console.error('Error during password comparison:', err);
+            return res.status(500).json({ message: 'Error logging in' });
+        }
+    });
+});
+
+// Forgot Password route
+app.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // Check if email exists in the database
+        const query = 'SELECT * FROM users WHERE email = ?';
+        db.query(query, [email], (err, results) => {
+            if (err) {
+                console.error('Error checking email:', err);
+                return res.status(500).json({ message: 'Error processing request' });
+            }
+
+            if (results.length === 0) {
+                // To prevent enumeration, send the same response
+                return res.json({ message: 'Password reset link sent if email is registered' });
+            }
+
+            // Generate a password reset token
+            const resetToken = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+            // Create a reset link
+            const resetLink = `${process.env.RESET_PASSWORD_URL}/${resetToken}`;
+
+            // Send email with the reset link
+            const transporter = nodemailer.createTransport({
+                service: 'Gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            const mailOptions = {
+                from: 'no-reply@example.com',
+                to: email,
+                subject: 'Password Reset',
+                text: `You can reset your password using the following link: ${resetLink}`
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error('Error sending email:', error);
+                    return res.status(500).json({ message: 'Error sending password reset email' });
+                } else {
+                    console.log('Password reset email sent:', info.response);
+                    return res.json({ message: 'Password reset link sent if email is registered' });
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Error in forgot-password route:', err);
+        res.status(500).json({ message: 'Error processing request' });
+    }
+});
+
+// Reset Password route (for demonstration purposes)
+app.get('/reset-password/:token', (req, res) => {
+    const { token } = req.params;
+
+    try {
+        // Verify the token
+        jwt.verify(token, process.env.JWT_SECRET, (err) => {
+            if (err) {
+                console.error('Invalid or expired token:', err);
+                return res.status(400).json({ message: 'Invalid or expired token' });
+            }
+
+            res.sendFile(path.join(__dirname, 'reset-password.html'));
+        });
+    } catch (err) {
+        console.error('Error verifying token:', err);
+        res.status(500).json({ message: 'Error verifying token' });
+    }
+});
+
+// Handle reset password POST request (for demonstration purposes)
+app.post('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    try {
+        // Verify the token
+        jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+            if (err) {
+                console.error('Invalid or expired token:', err);
+                return res.status(400).json({ message: 'Invalid or expired token' });
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const query = 'UPDATE users SET password = ? WHERE email = ?';
+            db.query(query, [hashedPassword, decoded.email], (err) => {
+                if (err) {
+                    console.error('Error updating password:', err);
+                    return res.status(500).json({ message: 'Error updating password' });
+                }
+                res.json({ message: 'Password updated successfully' });
+            });
+        });
+    } catch (err) {
+        console.error('Error in reset-password route:', err);
+        res.status(500).json({ message: 'Error processing request' });
+    }
+});
+
+// Centralized Error Handling Middleware (Optional but recommended)
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err.stack);
+    res.status(500).json({ message: 'Something went wrong, please try again later.' });
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}/`);
+});
+
+
+3) Style.CSS FILE 
+
+/* General notification style */
+.notification {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-size: 16px;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: 300px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Notification types */
+.notification.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.notification.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.notification.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Show the notification */
+.notification.show {
+    opacity: 1;
+}
+
+/* Hide the notification (animation) */
+.notification.hidden {
+    opacity: 0;
+}
+/* General styles */
+
+body {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    background-color: #f4f4f4; /* Light background for better contrast */
+}
+
+header {
+    background-color: #7e107e; /* Slightly darker background color */
+    color: #fff;
+    padding: 20px 0; /* Increased padding for better spacing */
+    text-align: center;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0; /* Remove default margin */
+}
+
+nav ul li {
+    display: inline;
+    margin: 0 20px; /* Increased spacing between navigation items */
+}
+
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold; /* Added font weight for better visibility */
+}
+
+nav ul li a:hover {
+    text-decoration: underline; /* Underline on hover for better user feedback */
+}
+
+section {
+    padding: 30px; /* Increased padding for better content spacing */
+    background-color: #fff; /* White background for sections for contrast */
+    border-radius: 8px; /* Rounded corners for a modern look */
+    margin: 20px auto; /* Centering the section with margin */
+    max-width: 800px; /* Max width for large screens */
+}
+
+h2 {
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 20px; /* Added margin below heading */
+    font-size: 1.5em; /* Increased font size for headings */
+    color: #333; /* Darker text color for better readability */
+}
+
+/* Form styles */
+form {
+    max-width: 400px; /* Increased max-width for better readability */
+    margin: 0 auto; /* Center the form */
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f9f9; /* Light background for forms */
+    padding: 20px; /* Added padding inside the form */
+    border-radius: 8px; /* Rounded corners for a modern look */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Light shadow for form */
+}
+
+label {
+    margin: 10px 0 5px;
+    font-weight: bold; /* Added font weight for better visibility */
+}
+
+input, select, textarea {
+    padding: 10px;
+    margin-bottom: 15px; /* Increased margin for better spacing */
+    border: 1px solid #ccc;
+    border-radius: 4px; /* Rounded corners for form elements */
+    width: 100%;
+    box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
+}
+
+button {
+    background-color: #e0f17b;
+    color: #ce0909;
+    border: none;
+    padding: 10px 20px; /* Increased padding for better button size */
+    cursor: pointer;
+    margin-top: 10px;
+    border-radius: 4px; /* Rounded corners for button */
+    font-size: 1em; /* Increased font size for better readability */
+}
+
+button:hover {
+    background-color: #d1e1a7; /* Slightly darker color on hover */
+}
+
+.visible {
+    display: block;
+}
+/* Hide elements by default */
+.hidden {
+    display: none;
+}
+
+/* Show elements */
+.show {
+    display: block;
+}
+
+
+.form-section {
+    margin-bottom: 20px;
+}
+
+4) .env file
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=Dunya@Riek2027
+DB_NAME=ynovo_portal
+JWT_SECRET=G8kH6c9nFzTqZ7mP2bXxL3oR4aYvB1uJ6eQw8vPz
+PORT=3000
+
+
+
+5) README FILE
+
+
