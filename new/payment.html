@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .payment-methods {
+            margin-top: 20px;
+        }
+
+        .payment-methods label {
+            cursor: pointer;
+            display: block;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .payment-methods input[type="radio"] {
+            display: none;
+        }
+
+        .payment-methods input[type="radio"]:checked + .payment-option {
+            border-color: #7e107e;
+            background-color: #e0f17b;
+        }
+
+        .payment-option {
+            display: none;
+        }
+
+        .payment-methods input[type="radio"]:checked ~ .payment-option {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Payment Page</h1>
+    </header>
+    <section id="payment" class="section">
+        <h2>Payment Information</h2>
+        <div id="user-info">
+            <p><strong>Username:</strong> <span id="username">JohnDoe</span></p>
+            <p><strong>Email:</strong> <span id="email">johndoe@example.com</span></p>
+        </div>
+        <form id="payment-form">
+            <fieldset class="payment-methods">
+                <legend>Select Payment Method:</legend>
+                
+                <!-- Credit Card Option -->
+                <input type="radio" id="credit-card" name="payment-method" value="credit-card">
+                <label for="credit-card" class="payment-option">
+                    Credit Card
+                </label>
+                <div class="payment-option">
+                    <label for="card-number">Card Number:</label>
+                    <input type="text" id="card-number" name="card-number" required>
+                    <label for="card-expiry">Expiry Date:</label>
+                    <input type="text" id="card-expiry" name="card-expiry" required>
+                    <label for="card-cvc">CVC:</label>
+                    <input type="text" id="card-cvc" name="card-cvc" required>
+                </div>
+
+                <!-- PayPal Option -->
+                <input type="radio" id="paypal" name="payment-method" value="paypal">
+                <label for="paypal" class="payment-option">
+                    PayPal
+                </label>
+                <div class="payment-option">
+                    <p>Log in to your PayPal account to complete the payment.</p>
+                </div>
+
+                <!-- Bank Transfer Option -->
+                <input type="radio" id="bank-transfer" name="payment-method" value="bank-transfer">
+                <label for="bank-transfer" class="payment-option">
+                    Bank Transfer
+                </label>
+                <div class="payment-option">
+                    <p>Transfer the amount to the following bank details:</p>
+                    <p>Bank Name: Example Bank</p>
+                    <p>Account Number: 123456789</p>
+                    <p>Sort Code: 12-34-56</p>
+                </div>
+            </fieldset>
+            <button type="submit">Proceed to Payment</button>
+        </form>
+    </section>
+    <script src="script.fjs"></script>
+</body>
+</html>

@@ -41,8 +41,8 @@
 .notification.hidden {
     opacity: 0;
 }
-/* General styles */
 
+/* General styles */
 body {
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     margin: 0;
@@ -139,6 +139,7 @@ button:hover {
 .visible {
     display: block;
 }
+
 /* Hide elements by default */
 .hidden {
     display: none;
@@ -149,7 +150,164 @@ button:hover {
     display: block;
 }
 
-
 .form-section {
     margin-bottom: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Gender Options */
+.gender-options label {
+    margin-right: 10px;
+}
+
+/* Payment Methods Section */
+.payment-methods {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-top: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+/* Payment Info Section */
+.payment-info {
+    margin-top: 10px;
+    display: none;
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Show payment info for selected option */
+#payment-method:focus + .payment-info,
+#payment-method option:checked + .payment-info {
+    display: block;
+}
+
+/* Button Group Styles */
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* Primary Button */
+.btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Input Styles */
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Focus Styles */
+input:focus, select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Style the form label */
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+.section.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.payment-info {
+    margin-top: 10px;
+    display: none;
+}
+
+.payment-info.visible {
+    display: block;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
 }

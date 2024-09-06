@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await response.json();
 
             if (data.token) {
+                localStorage.setItem('token', data.token);
                 localStorage.setItem('loggedIn', 'true');
                 showNotification('Login successful!', 'success');
                 showSection('home');
@@ -40,61 +41,50 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listener for logout
     document.getElementById('logout-btn')?.addEventListener('click', function () {
+        localStorage.removeItem('token');
         localStorage.setItem('loggedIn', 'false');
         showNotification('Logged out successfully!', 'success');
         showSection('home');
         toggleForms(false);
     });
 
-    // Event listener for forgot password form submission
-    document.getElementById('forgot-password-form')?.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        const email = document.getElementById('forgot-email').value;
 
-        try {
-            const response = await fetch('/forgot-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-            await response.json();
-            showNotification(`Password reset link has been sent to ${email}`, 'success');
-            showLoginOptions('login'); // Return to login after password reset
-        } catch (error) {
-            console.error('Error:', error);
-            showNotification('There was an error sending the password reset. Please try again.', 'error');
-        }
-    });
+  // Event listener for register form submission
+document.getElementById('register-form')?.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const username = document.getElementById('register-username').value;
+    const password = document.getElementById('register-password').value;
+    const email = document.getElementById('register-email').value;
 
-    // Event listener for register form submission
-    document.getElementById('register-form')?.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        const username = document.getElementById('register-username').value;
-        const password = document.getElementById('register-password').value;
-        const email = document.getElementById('register-email').value;
+    // Basic frontend validation (optional)
+    if (!username || !password || !email) {
+        showNotification('Please fill in all fields.', 'error');
+        return;
+    }
 
-        try {
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    password,
-                    email,
-                }),
-            });
+    try {
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password, email }),
+        });
+
+        // Check if the response was successful
+        if (response.ok) {
             const data = await response.json();
             showNotification(`Registration successful for ${username}. Welcome!`, 'success');
-            showLoginOptions('login'); // Return to login after registration
-        } catch (error) {
-            console.error('Error:', error);
-            showNotification('There was an error with your registration. Please try again.', 'error');
+            showSection('login'); // Show the login section after registration
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Registration failed. Please try again.', 'error');
         }
-    });
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error with your registration. Please try again.', 'error');
+    }
+});
 
     // Event listeners for login options
     document.getElementById('forgot-password-link')?.addEventListener('click', function (event) {
@@ -113,19 +103,39 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Initial section to show
-    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'login');
+    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'register');
 });
 
 // Function to check login status before showing section
 function checkLogin(sectionId) {
     if (localStorage.getItem('loggedIn') !== 'true') {
         showNotification('You must be logged in to access this section.', 'error');
-        showSection('login'); // Show the login section
+        showSection('register'); // Show the register section
     } else {
         showSection(sectionId);
     }
 }
 
+// Function to handle form steps in booking
+function nextStep() {
+    const currentStep = document.querySelector('.step.active');
+    const nextStep = currentStep.nextElementSibling;
+    if (nextStep) {
+        currentStep.classList.add('hidden');
+        nextStep.classList.remove('hidden');
+        nextStep.classList.add('active');
+    }
+}
+
+function previousStep() {
+    const currentStep = document.querySelector('.step.active');
+    const previousStep = currentStep.previousElementSibling;
+    if (previousStep) {
+        currentStep.classList.add('hidden');
+        previousStep.classList.remove('hidden');
+        previousStep.classList.add('active');
+    }
+}
 // Function to handle booking form submission
 document.getElementById('booking-form')?.addEventListener('submit', async function (event) {
     event.preventDefault();
@@ -149,6 +159,7 @@ document.getElementById('booking-form')?.addEventListener('submit', async functi
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
             body: JSON.stringify({
                 name,
@@ -188,14 +199,11 @@ document.getElementById('enquiries-form')?.addEventListener('submit', async func
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({
-                name,
-                email,
-                message,
-            }),
+            body: JSON.stringify({ name, email, message }),
         });
-        const data = await response.text();
+        await response.text();
         showNotification(`Thank you ${name} for your enquiry! We will respond to you at ${email}.`, 'success');
         document.getElementById('enquiries-form').reset();
     } catch (error) {
@@ -315,3 +323,188 @@ function showLoginOptions(option) {
         register.classList.remove('hidden');
     }
 }
+
+// Function to show payment info based on selected payment method
+function showPaymentInfo() {
+    var paymentMethod = document.getElementById("payment-method").value;
+    var creditCardInfo = document.getElementById("credit-card-info");
+    var paypalInfo = document.getElementById("paypal-info");
+    var bankTransferInfo = document.getElementById("bank-transfer-info");
+
+    creditCardInfo.classList.add("hidden");
+    paypalInfo.classList.add("hidden");
+    bankTransferInfo.classList.add("hidden");
+
+    if (paymentMethod === "credit-card") {
+        creditCardInfo.classList.remove("hidden");
+    } else if (paymentMethod === "paypal") {
+        paypalInfo.classList.remove("hidden");
+    } else if (paymentMethod === "bank-transfer") {
+        bankTransferInfo.classList.remove("hidden");
+    }
+}
+
+// Handle payment
+async function makePayment(bookingId, paymentMethod, paymentStatus, paymentAmount) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+
+    try {
+        const response = await fetch('/payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ bookingId, paymentMethod, paymentStatus, paymentAmount }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Payment processed successfully');
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error processing payment:', error);
+    }
+}
+
+// Handle credit card payment
+async function saveCreditCardPayment(paymentId, cardNumber, expiryDate, cvc) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+
+    try {
+        const response = await fetch('/credit-card-payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ paymentId, cardNumber, expiryDate, cvc }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Credit card payment saved successfully');
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error saving credit card payment:', error);
+    }
+}
+
+// Handle bank transfer details
+async function saveBankTransferDetails(paymentId, bankName, accountNumber, sortCode) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+
+    try {
+        const response = await fetch('/bank-transfer-details', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ paymentId, bankName, accountNumber, sortCode }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Bank transfer details saved successfully');
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error saving bank transfer details:', error);
+    }
+}
+
+// Handle PayPal payment
+async function savePayPalPayment(paymentId, transactionId, paypalStatus) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in first');
+        return;
+    }
+
+    try {
+        const response = await fetch('/paypal-payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ paymentId, transactionId, paypalStatus }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('PayPal payment saved successfully');
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error saving PayPal payment:', error);
+    }
+}
+// Function to simulate logging out
+function logoutUser() {
+    // Clear any user session data (this depends on how you manage sessions)
+    // If using localStorage:
+    localStorage.removeItem('userLoggedIn');
+
+    // Hide the logout button and show the register link
+    document.getElementById('logout-section').classList.add('hidden');
+    document.querySelector('a[href="#register"]').classList.remove('hidden');
+
+    // Optionally redirect to home or login page
+    showSection('login');
+    alert("You have been logged out.");
+}
+
+// Simulate login and show the logout button when a user logs in
+function userLoggedIn() {
+    // Hide login/register link and show the logout button
+    document.querySelector('a[href="#register"]').classList.add('hidden');
+    document.getElementById('logout-section').classList.remove('hidden');
+}
+document.addEventListener("DOMContentLoaded", function() {
+    // Check if user is logged in
+    if (localStorage.getItem('userLoggedIn')) {
+        userLoggedIn();
+    }
+});
+document.getElementById('logout-button')?.addEventListener('click', async function () {
+    try {
+        const response = await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // No body needed for logout if you don't need to send any data
+        });
+
+        if (response.ok) {
+            showNotification('Successfully logged out.', 'success');
+            // Redirect to login page or update UI
+            window.location.href = '/login'; // Or show login form
+        } else {
+            showNotification('Logout failed. Please try again.', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error with your logout. Please try again.', 'error');
+    }
+});
