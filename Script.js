@@ -7,13 +7,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const isLoggedIn = localStorage.getItem('loggedIn') === 'true';
     toggleForms(isLoggedIn);
 
-    // Event listener for login form submission
     document.getElementById('login-form')?.addEventListener('submit', async function (event) {
         event.preventDefault();
-
+    
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-
+    
         try {
             const response = await fetch('/login', {
                 method: 'POST',
@@ -22,14 +21,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({ email, password }),
             });
+    
             const data = await response.json();
-
+    
             if (data.token) {
+                // Store token and login status
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('loggedIn', 'true');
+    
+                // Update UI
                 showNotification('Login successful!', 'success');
-                showSection('home');
                 toggleForms(true);
+    
+                // Redirect to the home section
+                window.location.hash = '#home';
+                showSection('home');  // Ensure the home section is visible
             } else {
                 showNotification('Invalid username or password. Please try again.', 'error');
             }
@@ -38,31 +44,71 @@ document.addEventListener('DOMContentLoaded', function () {
             showNotification('There was an error with your login. Please try again.', 'error');
         }
     });
+    
+  
+// Function to show/hide sections
+function showSection(sectionId) {
+    // Logic to show or hide sections as needed
+    console.log("Showing section: " + sectionId);
+}
 
-    // Event listener for logout
-    document.getElementById('logout-btn')?.addEventListener('click', function () {
-        localStorage.removeItem('token');
-        localStorage.setItem('loggedIn', 'false');
-        showNotification('Logged out successfully!', 'success');
-        showSection('home');
-        toggleForms(false);
-    });
+// Function to check if user is logged in before showing certain sections
+function checkLogin(sectionId) {
+    if (localStorage.getItem('userLoggedIn')) {
+        showSection(sectionId);
+    } else {
+        alert("You need to log in to access this section.");
+        showSection('register');
+    }
+}
 
+// Function to log out the user
+function logoutUser() {
+    localStorage.removeItem('userLoggedIn');
+    localStorage.removeItem('token'); // Remove token if stored for auth purposes
 
-  // Event listener for register form submission
+    // Hide the logout link and show the register link
+    document.getElementById('logout-link').classList.add('hidden');
+    document.getElementById('register-link').classList.remove('hidden');
+
+    alert("You have been logged out.");
+    window.location.href = '#home';  // Optional: Redirect to home page
+}
+
+// Simulate login
+function userLoggedIn() {
+    // Store login status
+    localStorage.setItem('userLoggedIn', 'true');
+
+    // Hide register link and show the logout link
+    document.getElementById('register-link').classList.add('hidden');
+    document.getElementById('logout-link').classList.remove('hidden');
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Check if user is logged in
+    if (localStorage.getItem('userLoggedIn')) {
+        userLoggedIn(); // If logged in, update the UI accordingly
+    }
+});
+
+ // Event listener for register form submission
 document.getElementById('register-form')?.addEventListener('submit', async function (event) {
     event.preventDefault();
+    
+    // Retrieve form values
     const username = document.getElementById('register-username').value;
     const password = document.getElementById('register-password').value;
     const email = document.getElementById('register-email').value;
 
-    // Basic frontend validation (optional)
+    // Basic frontend validation
     if (!username || !password || !email) {
         showNotification('Please fill in all fields.', 'error');
         return;
     }
 
     try {
+        // Send registration data to server
         const response = await fetch('/register', {
             method: 'POST',
             headers: {
@@ -75,23 +121,24 @@ document.getElementById('register-form')?.addEventListener('submit', async funct
         if (response.ok) {
             const data = await response.json();
             showNotification(`Registration successful for ${username}. Welcome!`, 'success');
-            showSection('login'); // Show the login section after registration
+            // Redirect to login page after successful registration
+            window.location.href = '#login'; // Redirect to login section
+            showSection('login'); // Show the login section
         } else {
+            // Handle server-side validation errors
             const errorData = await response.json();
             showNotification(errorData.error || 'Registration failed. Please try again.', 'error');
         }
     } catch (error) {
+        // Handle network or unexpected errors
         console.error('Error:', error);
         showNotification('There was an error with your registration. Please try again.', 'error');
     }
 });
 
-    // Event listeners for login options
-    document.getElementById('forgot-password-link')?.addEventListener('click', function (event) {
-        event.preventDefault();
-        showLoginOptions('forgot-password');
-    });
 
+    // Event listeners for login options
+  
     document.getElementById('register-link')?.addEventListener('click', function (event) {
         event.preventDefault();
         showLoginOptions('register');
@@ -103,7 +150,7 @@ document.getElementById('register-form')?.addEventListener('submit', async funct
     });
 
     // Initial section to show
-    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'register');
+    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'logout');
 });
 
 // Function to check login status before showing section
@@ -264,24 +311,36 @@ function shiftSectionsAutomatically() {
     });
 }
 
-// Function to toggle visibility of forms based on login status
+/// Function to toggle visibility of forms based on login status
 function toggleForms(isLoggedIn) {
     const bookingSection = document.getElementById('booking');
     const enquiriesSection = document.getElementById('enquiries');
-    const loginOptions = document.getElementById('login');
+    const loginOptions = document.getElementById('register-link'); // Changed to the correct element
+    const logoutSection = document.getElementById('logout-link');  // Changed to the correct element
 
-    if (isLoggedIn) {
-        bookingSection.classList.remove('hidden');
-        enquiriesSection.classList.remove('hidden');
-        loginOptions.classList.add('hidden');
-        document.getElementById('logout-btn')?.classList.remove('hidden');
+    // Ensure the elements are selected correctly
+    if (bookingSection && enquiriesSection && loginOptions && logoutSection) {
+        if (isLoggedIn) {
+            bookingSection.classList.remove('hidden');
+            enquiriesSection.classList.remove('hidden');
+            loginOptions.classList.add('hidden');  // Hide the login option
+            logoutSection.classList.remove('hidden');  // Show the logout option
+        } else {
+            bookingSection.classList.add('hidden');
+            enquiriesSection.classList.add('hidden');
+            loginOptions.classList.remove('hidden');  // Show the login option
+            logoutSection.classList.add('hidden');  // Hide the logout option
+        }
     } else {
-        bookingSection.classList.add('hidden');
-        enquiriesSection.classList.add('hidden');
-        loginOptions.classList.remove('hidden');
-        document.getElementById('logout-btn')?.classList.add('hidden');
+        console.error("Some elements are missing in the DOM.");
     }
 }
+
+// Simulate checking the login status on page load
+document.addEventListener("DOMContentLoaded", function() {
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+    toggleForms(isLoggedIn);  // Call toggleForms based on the login status
+});
 
 // Function to show notifications
 function showNotification(message, type = 'info') {
@@ -459,52 +518,3 @@ async function savePayPalPayment(paymentId, transactionId, paypalStatus) {
         console.error('Error saving PayPal payment:', error);
     }
 }
-// Function to simulate logging out
-function logoutUser() {
-    // Clear any user session data (this depends on how you manage sessions)
-    // If using localStorage:
-    localStorage.removeItem('userLoggedIn');
-
-    // Hide the logout button and show the register link
-    document.getElementById('logout-section').classList.add('hidden');
-    document.querySelector('a[href="#register"]').classList.remove('hidden');
-
-    // Optionally redirect to home or login page
-    showSection('login');
-    alert("You have been logged out.");
-}
-
-// Simulate login and show the logout button when a user logs in
-function userLoggedIn() {
-    // Hide login/register link and show the logout button
-    document.querySelector('a[href="#register"]').classList.add('hidden');
-    document.getElementById('logout-section').classList.remove('hidden');
-}
-document.addEventListener("DOMContentLoaded", function() {
-    // Check if user is logged in
-    if (localStorage.getItem('userLoggedIn')) {
-        userLoggedIn();
-    }
-});
-document.getElementById('logout-button')?.addEventListener('click', async function () {
-    try {
-        const response = await fetch('/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            // No body needed for logout if you don't need to send any data
-        });
-
-        if (response.ok) {
-            showNotification('Successfully logged out.', 'success');
-            // Redirect to login page or update UI
-            window.location.href = '/login'; // Or show login form
-        } else {
-            showNotification('Logout failed. Please try again.', 'error');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('There was an error with your logout. Please try again.', 'error');
-    }
-});

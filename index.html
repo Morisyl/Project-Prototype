@@ -9,19 +9,23 @@
 <body>
     <header>
         <h1>Welcome to YnoVo Software Developers Ltd</h1>
-        <nav>
-            <ul>
-                <li><a href="#home" onclick="showSection('home')">Home</a></li>
-                <li><a href="#about_us" onclick="showSection('about_us')">About Us</a></li>
-                <li><a href="#services" onclick="showSection('services')">Services</a></li>
-                <li><a href="#booking" onclick="checkLogin('booking')">Booking</a></li>
-                <li><a href="#enquiries" onclick="checkLogin('enquiries')">Enquiries</a></li>
-                <li><a href="#contact_us" onclick="showSection('contact_us')">Contact Us</a></li>
-                <li><a href="#clients" onclick="showSection('clients')">Clients</a></li>
-                <li><a href="#register" onclick="showSection('register')">Sign up/Sign in</a></li>
-                <li id="logout-section" class="hidden"><a href="#" onclick="logoutUser()">Logout</a></li>
-            </ul>
-        </nav>
+<nav>
+    <ul>
+        <li><a href="#home" onclick="showSection('home')">Home</a></li>
+        <li><a href="#about_us" onclick="showSection('about_us')">About Us</a></li>
+        <li><a href="#services" onclick="showSection('services')">Services</a></li>
+        <li><a href="#booking" onclick="checkLogin('booking')">Booking</a></li>
+        <li><a href="#enquiries" onclick="checkLogin('enquiries')">Enquiries</a></li>
+        <li><a href="#contact_us" onclick="showSection('contact_us')">Contact Us</a></li>
+        <li><a href="#clients" onclick="showSection('clients')">Clients</a></li>
+        <!-- Sign up/Sign in link, initially visible -->
+        <li><a href="#register" id="register-link" onclick="showSection('register')">Sign up/Sign in</a></li>
+        <!-- Logout link, initially hidden -->
+        <li><a href="#logout" id="logout-link" class="hidden" onclick="logoutUser()">Logout</a></li>
+    </ul>
+    
+</nav>
+
     </header>
 
     <main>
@@ -43,7 +47,7 @@
         <section id="services" class="section hidden">
             <h2>Our Services</h2>
             <ul>
-                <li><a href="#software-development" onclick="showSection('software-engineering')">Software Development</a></li>
+                <li><a href="#software-development" onclick="showSection('software-development')">Software Development</a></li>
                 <li><a href="#web-development" onclick="showSection('web-development')">Web Development</a></li>
                 <li><a href="#securing-networks" onclick="showSection('securing-networks')">Securing Networks</a></li>
                 <li><a href="#consulting" onclick="showSection('consulting')">Consulting</a></li>
