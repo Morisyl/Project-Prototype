@@ -173,6 +173,16 @@ const authenticateJWT = (req, res, next) => {
         next();
     });
 };
+const blacklistedTokens = []; // Assuming you store blacklisted tokens here
+
+function isTokenBlacklisted(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+    if (blacklistedTokens.includes(token)) {
+        return res.status(401).json({ message: 'Token is blacklisted.' });
+    }
+    next(); // Continue to the next middleware or route handler if token is not blacklisted
+}
+module.exports = isTokenBlacklisted;
 
 // Routes
 // Serve HTML files

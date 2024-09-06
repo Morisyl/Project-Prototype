@@ -127,6 +127,12 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+// Simulate checking the login status on page load
+document.addEventListener("DOMContentLoaded", function() {
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+    toggleForms(isLoggedIn);  // Call toggleForms based on the login status
+});
+
 
  // Event listener for register form submission
 document.getElementById('register-form')?.addEventListener('submit', async function (event) {
@@ -351,36 +357,28 @@ function shiftSectionsAutomatically() {
     });
 }
 
-/// Function to toggle visibility of forms based on login status
-function toggleForms(isLoggedIn) {
+/function toggleForms(isLoggedIn) {
     const bookingSection = document.getElementById('booking');
     const enquiriesSection = document.getElementById('enquiries');
-    const loginOptions = document.getElementById('register-link'); // Changed to the correct element
-    const logoutSection = document.getElementById('logout-link');  // Changed to the correct element
+    const loginOptions = document.getElementById('register-link');
+    const logoutSection = document.getElementById('logout-link');
 
-    // Ensure the elements are selected correctly
     if (bookingSection && enquiriesSection && loginOptions && logoutSection) {
         if (isLoggedIn) {
             bookingSection.classList.remove('hidden');
             enquiriesSection.classList.remove('hidden');
-            loginOptions.classList.add('hidden');  // Hide the login option
-            logoutSection.classList.remove('hidden');  // Show the logout option
+            loginOptions.classList.add('hidden');
+            logoutSection.classList.remove('hidden');
         } else {
             bookingSection.classList.add('hidden');
             enquiriesSection.classList.add('hidden');
-            loginOptions.classList.remove('hidden');  // Show the login option
-            logoutSection.classList.add('hidden');  // Hide the logout option
+            loginOptions.classList.remove('hidden');
+            logoutSection.classList.add('hidden');
         }
     } else {
         console.error("Some elements are missing in the DOM.");
     }
-}
 
-// Simulate checking the login status on page load
-document.addEventListener("DOMContentLoaded", function() {
-    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
-    toggleForms(isLoggedIn);  // Call toggleForms based on the login status
-});
 
 // Function to show notifications
 function showNotification(message, type = 'info') {
