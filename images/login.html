@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login, Registration, and Forgot Password</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin: 10px 0 5px;
+            text-align: left;
+        }
+        input {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+            display: block;
+            margin-top: 10px;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="login-section">
+            <h2>Login</h2>
+            <form id="login-form">
+                <label for="login-email">Email:</label>
+                <input type="email" id="login-email" required>
+
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" required>
+
+                <button type="submit">Login</button>
+            </form>
+            <a href="#" onclick="showSection('forgot-password-section')">Forgot Password?</a>
+            <a href="#" onclick="showSection('register-section')">Register</a>
+        </div>
+
+        <div id="register-section" class="hidden">
+            <h2>Register</h2>
+            <form id="register-form">
+                <label for="reg-name">Name:</label>
+                <input type="text" id="reg-name" required>
+
+                <label for="reg-email">Email:</label>
+                <input type="email" id="reg-email" required>
+
+                <label for="reg-password">Password:</label>
+                <input type="password" id="reg-password" required>
+
+                <button type="submit">Register</button>
+            </form>
+            <a href="#" onclick="showSection('login-section')">Login</a>
+        </div>
+
+        <div id="forgot-password-section" class="hidden">
+            <h2>Forgot Password</h2>
+            <form id="forgot-password-form">
+                <label for="forgot-email">Email:</label>
+                <input type="email" id="forgot-email" required>
+
+                <button type="submit">Reset Password</button>
+            </form>
+            <a href="#" onclick="showSection('login-section')">Login</a>
+        </div>
+    </div>
+
+    <script>
+        // Function to show and hide sections
+        function showSection(sectionId) {
+            document.querySelectorAll('.container > div').forEach(div => {
+                div.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // Handle form submissions
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('Login successful!');
+                window.location.href = 'index.html'; // Redirect to home or dashboard
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an error with your login. Please try again.');
+            });
+        });
+
+        document.getElementById('register-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email, password }),
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('Registration successful!');
+                showSection('login-section'); // Show login section after registration
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an error with your registration. Please try again.');
+            });
+        });
+
+        document.getElementById('forgot-password-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+
+            fetch('/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('If the email is registered, a password reset link has been sent.');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an error with the password reset request. Please try again.');
+            });
+        });
+
+        // Show login section by default
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('login-section');
+        });
+    </script>
+</body>
+</html>
