@@ -21,19 +21,16 @@ server.js: Node.js server file for handling backend logic.
 How to Use
 Clone the Repository
 
-sh
-Copy code
+
 git clone https://github.com/username/repository-name.git
 cd repository-name
 Install Dependencies Ensure you have Node.js installed. Install the necessary npm packages:
 
-sh
-Copy code
+
 npm install
 Run the Server Start the server to run the website locally:
 
-sh
-Copy code
+
 node server.js
 The website will be available at http://localhost:3000.
 
