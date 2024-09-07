@@ -204,74 +204,97 @@ function checkLogin(sectionId) {
 
 
 // Function to handle booking form submission
-document.getElementById('booking-form')?.addEventListener('submit', async function (event) {
-    event.preventDefault();
 
-    if (localStorage.getItem('loggedIn') !== 'true') {
-        showNotification('You must be logged in to make a booking.', 'error');
-        showSection('login'); // Show the login section
-        return;
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.getElementById('booking-form');
 
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const gender = document.getElementById('gender').value;
-    const homePhone = document.getElementById('home-phone').value;
-    const officePhone = document.getElementById('office-phone').value;
-    const service = document.getElementById('service').value;
-    const details = document.getElementById('details').value;
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', async function (event) {
+            event.preventDefault(); // Prevent the default form submission behavior
 
-    try {
-        const response = await fetch('/booking', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                gender,
-                homePhone,
-                officePhone,
-                service,
-                details,
-            }),
+            console.log("Form submitted!");  // Debugging line
+
+            // Collect form values
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const gender = document.getElementById('gender').value;
+            const homePhone = document.getElementById('home-phone').value;
+            const officePhone = document.getElementById('office-phone').value;
+            const service = document.getElementById('service').value;
+            const details = document.getElementById('details').value;
+
+            try {
+                // Submit form data
+                const response = await fetch('/booking', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        gender,
+                        homePhone,
+                        officePhone,
+                        service,
+                        details,
+                    }),
+                });
+
+                const data = await response.text();
+
+                if (response.ok) {
+                    showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
+                    bookingForm.reset(); // Reset the form
+                } else {
+                    throw new Error(data);  // Handle server-side errors
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('There was an error with your booking. Please try again.', 'error');
+            }
         });
-        const data = await response.text();
-    
-        if (response.ok) {
-            showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
-            document.getElementById('booking-form').reset();
-        } else {
-            throw new Error(data);  // This will pass the error from the server
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('There was an error with your booking. Please try again.', 'error');
-    }    
+    }
 });
 
-// Function to handle form steps in booking
-function nextStep() {
-    const currentStep = document.querySelector('.step.active');
-    const nextStep = currentStep.nextElementSibling;
-    if (nextStep) {
-        currentStep.classList.add('hidden');
-        nextStep.classList.remove('hidden');
-        nextStep.classList.add('active');
-    }
-}
 
-function previousStep() {
-    const currentStep = document.querySelector('.step.active');
-    const previousStep = currentStep.previousElementSibling;
-    if (previousStep) {
-        currentStep.classList.add('hidden');
-        previousStep.classList.remove('hidden');
-        previousStep.classList.add('active');
+document.addEventListener("DOMContentLoaded", function() {
+    function goToStep(stepNumber) {
+        const steps = document.querySelectorAll('.step');
+        steps.forEach(step => {
+            step.classList.add('hidden');
+            step.classList.remove('active');
+        });
+
+        const targetStep = document.getElementById(`step-${stepNumber}`);
+        if (targetStep) {
+            targetStep.classList.remove('hidden');
+            targetStep.classList.add('active');
+        } else {
+            console.error(`Step ${stepNumber} not found.`);
+        }
     }
-}
+
+    // Event listener for the 'Next' button
+    document.getElementById('nextBtn').addEventListener('click', function() {
+        goToStep(2); // Go to Step 2
+    });
+
+    // Event listener for the 'Previous' button
+    document.getElementById('prevBtn').addEventListener('click', function() {
+        goToStep(1); // Go back to Step 1
+    });
+
+    // Optional: Handle form submission if necessary
+    document.getElementById('submit.booking-form').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Prevent the default form submission behavior
+
+        // Collect form values and handle submission as needed
+        console.log("Form submitted!"); // Replace with your form submission logic
+    });
+});
+
 
 // Function to handle enquiry form submission
 document.getElementById('enquiries-form')?.addEventListener('submit', async function (event) {
@@ -357,7 +380,7 @@ function shiftSectionsAutomatically() {
     });
 }
 
-/function toggleForms(isLoggedIn) {
+function toggleForms(isLoggedIn) {
     const bookingSection = document.getElementById('booking');
     const enquiriesSection = document.getElementById('enquiries');
     const loginOptions = document.getElementById('register-link');
@@ -378,8 +401,7 @@ function shiftSectionsAutomatically() {
     } else {
         console.error("Some elements are missing in the DOM.");
     }
-
-
+}
 // Function to show notifications
 function showNotification(message, type = 'info') {
     const notificationDiv = document.createElement('div');
@@ -393,44 +415,55 @@ function showNotification(message, type = 'info') {
         notificationDiv.classList.add('show');
     }, 100); // Delay to ensure the notification is added to the DOM
 
-    // Remove the notification after 3 seconds
+    // Remove the notification after 10 seconds
     setTimeout(() => {
         notificationDiv.classList.remove('show');
         notificationDiv.classList.add('hidden');
         // Remove the element from DOM after transition ends
-        setTimeout(() => notificationDiv.remove(), 300);
-    }, 3000);
+        setTimeout(() => notificationDiv.remove(), 500);
+    }, 7000);
 }
 
 // Function to show login options
 function showLoginOptions(option) {
     const login = document.getElementById('login');
-    const forgotPassword = document.getElementById('forgot-password');
     const register = document.getElementById('register');
 
     login.classList.add('hidden');
-    forgotPassword.classList.add('hidden');
     register.classList.add('hidden');
 
     if (option === 'login') {
         login.classList.remove('hidden');
-    } else if (option === 'forgot-password') {
-        forgotPassword.classList.remove('hidden');
     } else if (option === 'register') {
         register.classList.remove('hidden');
     }
 }
 
-// Function to show payment info based on selected payment method
-function showPaymentInfo() {
-    var paymentMethod = document.getElementById("payment-method").value;
-    console.log(paymentMethod);
-    
+document.addEventListener('DOMContentLoaded', function () {
+    // Attach event listener to the payment method select element
+    document.getElementById('payment-method').addEventListener('change', function () {
+        var paymentMethod = this.value;
+        showPaymentInfo(paymentMethod);
+    });
+});
+
+function showPaymentInfo(paymentMethod) {
+    // Hide all payment info sections
+    var paymentInfos = document.querySelectorAll('.payment-info');
+    paymentInfos.forEach(function (el) {
+        el.style.display = 'none';
+    });
+
+    // Show the selected payment info section
+    var selectedPaymentInfo = document.getElementById(paymentMethod + '-info');
+    if (selectedPaymentInfo) {
+        selectedPaymentInfo.style.display = 'block';
+    }
+}
     var creditCardInfo = document.getElementById("credit-card-info");
     var paypalInfo = document.getElementById("paypal-info");
     var bankTransferInfo = document.getElementById("bank-transfer-info");
     var mpesaInfo = document.getElementById("mpesa-info");
-
     // Hide all payment info sections
     creditCardInfo.classList.add("hidden");
     paypalInfo.classList.add("hidden");
@@ -438,16 +471,27 @@ function showPaymentInfo() {
     mpesaInfo.classList.add("hidden");
 
     // Show the relevant payment info section
-    if (paymentMethod === "credit-card") {
-        creditCardInfo.classList.remove("hidden");
-    } else if (paymentMethod === "paypal") {
-        paypalInfo.classList.remove("hidden");
-    } else if (paymentMethod === "bank-transfer") {
-        bankTransferInfo.classList.remove("hidden");
-    } else if (paymentMethod === "mpesa") {
-        mpesaInfo.classList.remove("hidden");
+    switch (paymentMethod) {
+        case "credit-card":
+            creditCardInfo.classList.remove("hidden");
+            console.log("Showing Credit Card Info");
+            break;
+        case "paypal":
+            paypalInfo.classList.remove("hidden");
+            console.log("Showing PayPal Info");
+            break;
+        case "bank-transfer":
+            bankTransferInfo.classList.remove("hidden");
+            console.log("Showing Bank Transfer Info");
+            break;
+        case "mpesa":
+            mpesaInfo.classList.remove("hidden");
+            console.log("Showing Mpesa Info");
+            break;
+        default:
+            console.error("Invalid payment method selected");
     }
-}
+
 
 // Function to retrieve user details
 async function getUserDetails(username) {
@@ -492,76 +536,86 @@ async function getBookingDetails(userId) {
     }
 }
 
-// Function to submit payment based on selected method
-async function submitPayment() {
-    const paymentMethod = document.getElementById("payment-method").value;
+async function submitPayment() {}
+    // Retrieve the payment method and username
+    const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+    const username = document.getElementById('username').value; // Retrieve username input
+
+    async function getUserDetails(username) {
+        try {
+            const response = await fetch(`/api/get-user/${username}`);
+            const data = await response.json();
+            return data; // Return raw data for simplicity
+        } catch (error) {
+            console.error('Error:', error);
+            return null; // Return null if there's an error
+        }
+    }
     
-    // Retrieve user ID
-    const { userId } = await getUserDetails(username);
-    if (!userId) {
-        alert('Unable to retrieve user details.');
-        return;
-    }
-
-    // Retrieve booking ID and payment amount
-    const { bookingId, paymentAmount } = await getBookingDetails(userId);
-    if (!bookingId || !paymentAmount) {
-        alert('Unable to retrieve booking details.');
-        return;
-    }
-
-    const paymentStatus = 'completed'; // Example status, adjust as needed
-
-    const paymentData = {
-        bookingId,
-        paymentMethod,
-        paymentStatus,
-        paymentAmount
-    };
-
     // Handle payment based on selected method
-    switch (paymentMethod) {
-        case 'credit-card':
-            const cardNumber = document.getElementById('card-number').value;
-            const cardExpiry = document.getElementById('card-expiry').value;
-            const cardCvc = document.getElementById('card-cvc').value;
-            if (!cardNumber || !cardExpiry || !cardCvc) {
-                alert('Please provide all required credit card details.');
-                return;
-            }
-            await saveCreditCardPayment(paymentData, cardNumber, cardExpiry, cardCvc);
-            break;
+async function submitPayment() {
+    // Get the selected payment method
+    const paymentMethod = document.getElementById('payment-method').value;
 
-        case 'paypal':
-            // Optionally handle PayPal specific logic or redirect
-            await savePayPalPayment(paymentData);
-            break;
+    // Show loader
+    showLoader();
 
-        case 'bank-transfer':
-            const bankName = document.getElementById('bank-name').value;
-            const accountNumber = document.getElementById('account-number').value;
-            const sortCode = document.getElementById('sort-code').value;
-            const phoneNumber = document.getElementById('phone-number').value;
-            const transactionCost = document.getElementById('transaction-cost').value;
-            if (!bankName || !accountNumber || !sortCode || !phoneNumber || !transactionCost) {
-                alert('Please provide all required bank transfer details.');
-                return;
-            }
-            await saveBankTransferDetails(paymentData, bankName, accountNumber, sortCode, phoneNumber, transactionCost);
-            break;
+    try {
+        switch (paymentMethod) {
+            case 'credit-card':
+                const cardNumber = document.getElementById('card-number').value;
+                const cardExpiry = document.getElementById('card-expiry').value;
+                const cardCvc = document.getElementById('card-cvc').value;
+                if (!cardNumber || !cardExpiry || !cardCvc) {
+                    alert('Please provide all required credit card details.');
+                    return;
+                }
+                await saveCreditCardPayment({ cardNumber, cardExpiry, cardCvc });
+                break;
 
-        case 'mpesa':
-            const mpesaNumber = document.getElementById('mpesa-number').value;
-            const transactionCode = document.getElementById('transaction-code').value;
-            if (!mpesaNumber || !mpesaTransactionCode) {
-                alert('Please provide all required Mpesa details.');
-                return;
-            }
-            await saveMpesaPayment(paymentData, mpesaNumber, transactionCode);
-            break;
+            case 'paypal':
+                const payment_email = document.getElementById('payment-email').value
+                const transaction_id = document.getElementById('transaction-id').value
+                if ( !payment_email || !transaction_id  ) {
+                    alert('Please provide all required paypal payment details.');
+                    return;
+                }
 
-        default:
-            alert('Invalid payment method selected.');
+                await savePayPalPayment({ payment_id, payment_email, transaction_id });
+                break;
+
+            case 'bank-transfer':
+                const bankName = document.getElementById('bank-name').value;
+                const accountNumber = document.getElementById('account-number').value;
+                const transactionsCode = document.getElementById('transactions-code').value;
+                const phoneNumber = document.getElementById('phone-number').value;
+                if (!bankName || !accountNumber || !transactionsCode || !phoneNumber) {
+                    alert('Please provide all required bank transfer details.');
+                    return;
+                }
+                await saveBankTransferDetails({ bankName, accountNumber, phoneNumber, transactionsCode });
+                break;
+
+            case 'mpesa':
+                const mpesaNumber = document.getElementById('mpesa-number').value;
+                const transactionCode = document.getElementById('transaction-code').value;
+                if (!mpesaNumber || !transactionCode) {
+                    alert('Please provide all required Mpesa details.');
+                    return;
+                }
+                await saveMpesaPayment({ mpesaNumber, transactionCode });
+                break;
+
+            default:
+                alert('Invalid payment method selected.');
+                break;
+        }
+    } catch (error) {
+        console.error('Payment processing error:', error);
+        alert('An error occurred while processing your payment.');
+    } finally {
+        // Hide loader
+        hideLoader();
     }
 }
 
@@ -582,160 +636,81 @@ function hideLoader() {
     document.getElementById('loader').classList.add('hidden');
 }
 
-// Redirect to login if token is missing
-function checkToken() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Session expired, redirecting to login...');
-        window.location.href = '/login';
-        return false;
-    }
-    return true;
-}
-
-// Validate credit card info (basic validation)
-function validateCreditCard(cardNumber, expiryDate, cvc) {
-    if (cardNumber.length !== 16 || isNaN(cardNumber)) {
-        alert('Invalid credit card number');
-        return false;
-    }
-    if (!expiryDate.match(/^\d{2}\/\d{2}$/)) {
-        alert('Invalid expiry date format. Use MM/YY.');
-        return false;
-    }
-    if (cvc.length !== 3 || isNaN(cvc)) {
-        alert('Invalid CVC');
-        return false;
-    }
-    return true;
-}
-
-// Handle payment
-async function makePayment(bookingId, paymentMethod, paymentStatus, paymentAmount) {
-    if (!checkToken()) return;
-    showLoader();
-
-    try {
-        const response = await fetch('/payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ bookingId, paymentMethod, paymentStatus, paymentAmount }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Payment processed successfully');
-        } else {
-            alert(`Error: ${data.message}`);
-        }
-    } catch (error) {
-        console.error('Error processing payment:', error);
-    } finally {
-        hideLoader();
+// Save payment methods (example functions, need to be implemented)
+async function saveCreditCardPayment(details) {
+    const response = await fetch('/api/credit-card-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(details),
+    });
+    const result = await response.json();
+    if (response.ok) {
+        alert('Credit Card payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
     }
 }
 
-// Handle credit card payment
-async function saveCreditCardPayment(paymentId, cardNumber, expiryDate, cvc) {
-    if (!checkToken()) return;
-    if (!validateCreditCard(cardNumber, expiryDate, cvc)) return;
-
-    showLoader();
-
-    try {
-        const response = await fetch('/credit-card-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ paymentId, cardNumber, expiryDate, cvc }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Credit card payment saved successfully');
-        } else {
-            alert(`Error: ${data.message}`);
-        }
-    } catch (error) {
-        console.error('Error saving credit card payment:', error);
-    } finally {
-        hideLoader();
+async function savePayPalPayment() {
+    const response = await fetch('/api/paypal-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({}),
+    });
+    const result = await response.json();
+    if (response.ok) {
+        alert('PayPal payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
     }
 }
 
-// Handle bank transfer details
-async function saveBankTransferDetails(paymentId, bankName, accountNumber, sortCode) {
-    if (!checkToken()) return;
-
-    showLoader();
-
-    try {
-        const response = await fetch('/bank-transfer-details', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ paymentId, bankName, accountNumber, sortCode }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Bank transfer details saved successfully');
-        } else {
-            alert(`Error: ${data.message}`);
-        }
-    } catch (error) {
-        console.error('Error saving bank transfer details:', error);
-    } finally {
-        hideLoader();
+async function saveBankTransferDetails(details) {
+    const response = await fetch('/api/bank-transfer-details', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(details),
+    });
+    const result = await response.json();
+    if (response.ok) {
+        alert('Bank Transfer payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
     }
 }
 
-// Handle PayPal payment
-async function savePayPalPayment(paymentId, transactionId, paypalStatus) {
-    if (!checkToken()) return;
-
-    showLoader();
-
-    try {
-        const response = await fetch('/paypal-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ paymentId, transactionId, paypalStatus }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('PayPal payment saved successfully');
-        } else {
-            alert(`Error: ${data.message}`);
-        }
-    } catch (error) {
-        console.error('Error saving PayPal payment:', error);
-    } finally {
-        hideLoader();
+async function saveMpesaPayment(details) {
+    const response = await fetch('/api/mpesa-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(details),
+    });
+    const result = await response.json();
+    if (response.ok) {
+        alert('Mpesa payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
     }
 }
 
-// Handle Mpesa payment
-async function saveMpesaPayment(paymentId, mpesaNumber,transactionCode) {
-    if (!checkToken()) return;
 
-    showLoader();
-
-    try {
-        const response = await fetch('/mpesa-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ paymentId, mpesaNumber, transactionCode }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Mpesa payment saved successfully');
-        } else {
-            alert(`Error: ${data.message}`);
-        }
-    } catch (error) {
-        console.error('Error saving Mpesa payment:', error);
-    } finally {
-        hideLoader();
-    }
+// Helper function to get headers with token
+function getHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    };
 }
+
+
+// Show and hide loader
+function showLoader() {
+    document.getElementById('loader').classList.remove('hidden');
+}
+
+function hideLoader() {
+    document.getElementById('loader').classList.add('hidden');
+}
+
+
+

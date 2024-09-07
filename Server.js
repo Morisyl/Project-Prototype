@@ -7,15 +7,46 @@ const helmet = require('helmet');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
+const crypto = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware to verify JWT tokens
+const authenticateJWT = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (token == null) return res.sendStatus(401);
+    
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
+// Middleware to Blacklist JWT tokens
+const blacklistedTokens = [];
+
+function isTokenBlacklisted(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+    if (blacklistedTokens.includes(token)) {
+        return res.status(401).json({ message: 'Token is blacklisted.' });
+    }
+    next(); // Continue to the next middleware or route handler if token is not blacklisted
+}
+module.exports = isTokenBlacklisted;
+
+
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json());// For parsing application/json
 app.use(express.static(path.join(__dirname))); // Serve static files from the public directory
 app.use(helmet()); // Set security headers
+app.use(authenticateJWT);  
+
+
 
 // MySQL database connection setup
 const db = mysql.createConnection({
@@ -110,10 +141,8 @@ db.connect((err) => {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     payment_id INT,
                     bank_name VARCHAR(255) NOT NULL,
-                    account_number VARCHAR(20) NOT NULL,
-                    sort_code VARCHAR(10) NOT NULL,
-                    phone_number VARCHAR(20),
-                    transaction_cost DECIMAL(10, 2),
+                    account_number INT(20) NOT NULL,
+                    transactions_code VARCHAR(10) NOT NULL,
                     FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
                 )
             `;
@@ -123,6 +152,7 @@ db.connect((err) => {
                 CREATE TABLE IF NOT EXISTS paypal_payments (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     payment_id INT,
+                    payment_email VARCHAR(25) NOT NULL,
                     transaction_id VARCHAR(255) NOT NULL,
                     paypal_status ENUM('pending', 'completed') NOT NULL,
                     FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
@@ -160,29 +190,27 @@ db.connect((err) => {
     createTables();
 });
 
-// Middleware to verify JWT tokens
-const authenticateJWT = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (token == null) return res.sendStatus(401);
-    
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
-};
-const blacklistedTokens = []; // Assuming you store blacklisted tokens here
+// Middleware Encryption configuration
+const algorithm = 'aes-256-cbc';
+const encryptionKey = process.env.ENCRYPTION_KEY; // 32 bytes
 
-function isTokenBlacklisted(req, res, next) {
-    const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
-    if (blacklistedTokens.includes(token)) {
-        return res.status(401).json({ message: 'Token is blacklisted.' });
-    }
-    next(); // Continue to the next middleware or route handler if token is not blacklisted
+// Encrypt function with unique IV for every encryption operation
+function encrypt(text) {
+    const iv = crypto.randomBytes(16);  // Generate a new IV each time
+    const cipher = crypto.createCipheriv(algorithm, Buffer.from(encryptionKey, 'hex'), iv);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return { iv: iv.toString('hex'), encryptedData: encrypted };
 }
-module.exports = isTokenBlacklisted;
+// Decrypt function using IV and encrypted data
+function decrypt(encryptedData, iv) {
+    const decipher = crypto.createDecipheriv(algorithm, Buffer.from(encryptionKey, 'hex'), Buffer.from(iv, 'hex'));
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+module.exports = { encrypt, decrypt };
 
 // Routes
 // Serve HTML files
@@ -240,10 +268,10 @@ app.post('/register', async (req, res) => {
 
         // Check if email already exists
         const checkQuery = 'SELECT * FROM users WHERE email = ?';
-        const [existingUser] = await new Promise((resolve, reject) => {
+        const existingUser = await new Promise((resolve, reject) => {
             db.query(checkQuery, [email], (err, results) => {
                 if (err) return reject(err);
-                resolve(results);
+                resolve(results.length ? results[0] : null);  
             });
         });
 
@@ -256,13 +284,24 @@ app.post('/register', async (req, res) => {
 
         // Insert the new user
         const insertQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-        await new Promise((resolve, reject) => {
-            db.query(insertQuery, [username, email, hashedPassword], (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
+        try {
+            await new Promise((resolve, reject) => {
+                db.query(insertQuery, [username, email, hashedPassword], (err, results) => {
+                    if (err) {
+                        if (err.code === 'ER_DUP_ENTRY') {
+                            return reject(new Error('Email already registered'));
+                        }
+                        return reject(err);  // Handle other errors
+                    }
+                    resolve(results);
+                });
             });
-        });
-
+            res.status(201).json({ message: 'Registration successful' });
+        } catch (err) {
+            console.error('Error during registration:', err.message);
+            res.status(500).json({ message: err.message });
+        }
+        
         // Return success message
         res.status(201).json({ message: 'Registration successful' });
 
@@ -283,31 +322,24 @@ app.post('/login', async (req, res) => {
             return res.status(500).json({ message: 'Error logging in' });
         }
 
-        if (results.length === 0) {
-            console.log('User not found');
+        if (results.length === 0) {  // Explicitly check if no user is found
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-
+    
         const user = results[0];
+        const match = await bcrypt.compare(password, user.password);
 
-        try {
-            const match = await bcrypt.compare(password, user.password);
-
-            if (match) {
-                const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
-                    expiresIn: '1h'
-                });
-                res.json({ token });
-            } else {
-                res.status(400).json({ message: 'Invalid email or password' });
-            }
-        } catch (err) {
-            console.error('Error comparing passwords:', err);
-            res.status(500).json({ message: 'Error logging in' });
+        if (match) {
+            const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            console.log('User found:', user); // Log user info before responding
+            console.log('Password match:', match); // Log match status
+            res.json({ token });
+        } else {
+            console.log('Invalid password attempt for user:', email); // Log failed login attempt
+            res.status(400).json({ message: 'Invalid email or password' });
         }
     });
 });
-
 // Logout endpoint: Blacklists the token
 app.post('/logout', (req, res) => {
     const authHeader = req.headers['authorization'];
@@ -351,98 +383,145 @@ app.post('/payments', authenticateJWT, (req, res) => {
 });
 
 // Credit Card Payment route
-app.post('/credit-card-payments', authenticateJWT, (req, res) => {
-    const { paymentId, cardNumber, expiryDate, cvc } = req.body;
-    const userId = req.user.id; // Get user ID from token
+app.post('/api/credit-card-payments', (req, res) => {
+    const { bookingId, paymentAmount, cardNumber, expiryDate, cvc } = req.body;
 
-    const query = 'INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc, user_id) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [paymentId, cardNumber, expiryDate, cvc, userId], (err) => {
+    // Encrypt sensitive data
+    const encryptedCardNumber = encrypt(cardNumber);  // Use the updated encrypt function with IV
+    const encryptedExpiryDate = encrypt(expiryDate);
+    const encryptedCvc = encrypt(cvc);
+
+     // Dynamically use the payment amount passed from the request
+    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
+    db.query(insertPaymentQuery, [bookingId, 'credit-card', 'completed', paymentAmount], (err, result) => {
         if (err) {
-            console.error('Error saving credit card payment:', err);
-            res.status(500).json({ message: 'Error saving credit card payment' });
-        } else {
-            res.json({ message: 'Credit card payment saved successfully' });
+            console.error('Error inserting payment:', err);
+            return res.status(500).json({ message: 'Error processing payment' });
         }
-    });
+
+        const paymentId = result.insertId;
+
+
+ // Insert the encrypted card details and store the IV
+ const insertCreditCardPaymentQuery = 'INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc, iv) VALUES (?, ?, ?, ?, ?)';
+ db.query(insertCreditCardPaymentQuery, [paymentId, encryptedCardNumber.encryptedData, encryptedExpiryDate.encryptedData, encryptedCvc.encryptedData, encryptedCardNumber.iv], (err) => {
+     if (err) {
+         console.error('Error inserting credit card payment:', err);
+         return res.status(500).json({ message: 'Error processing payment' });
+     } else {
+         res.json({ message: 'Payment processed successfully' });
+     }
+ });
+});
 });
 
-// Bank Transfer Details route
-app.post('/bank-transfer-details', authenticateJWT, (req, res) => {
-    const { paymentId, bankName, accountNumber, sortCode } = req.body;
-    const userId = req.user.id; // Get user ID from token
 
-    const query = 'INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, sort_code, user_id) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [paymentId, bankName, accountNumber, sortCode, userId], (err) => {
+// Decrypt card data when needed
+app.get('/api/decrypted-card-details/:paymentId', (req, res) => {
+    const paymentId = parseInt(req.params.paymentId, 10);
+
+    const query = 'SELECT * FROM credit_card_payments WHERE payment_id = ?';
+    db.query(query, [paymentId], (err, results) => {
         if (err) {
-            console.error('Error saving bank transfer details:', err);
-            res.status(500).json({ message: 'Error saving bank transfer details' });
-        } else {
-            res.json({ message: 'Bank transfer details saved successfully' });
+            console.error('Error fetching card details:', err);
+            return res.status(500).json({ message: 'Error fetching card details' });
         }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+
+        const encryptedData = results[0];
+        const decryptedCardNumber = decrypt(encryptedData.card_number, encryptedData.iv);
+        const decryptedExpiryDate = decrypt(encryptedData.expiry_date, encryptedData.iv);
+        const decryptedCvc = decrypt(encryptedData.cvc, encryptedData.iv);
+
+
+        res.json({
+            cardNumber: decryptedCardNumber,
+            expiryDate: decryptedExpiryDate,
+            cvc: decryptedCvc
+        });
     });
 });
 
 // PayPal Payment route
-app.post('/paypal-payments', authenticateJWT, (req, res) => {
-    const { paymentId, transactionId, paypalStatus } = req.body;
-    const userId = req.user.id; // Get user ID from token
+app.post('/api/paypal-payments', authenticateJWT, (req, res) => {
+    const { bookingId, payment_email, transaction_id } = req.body;  // Ensure dynamic data from request
 
-    const query = 'INSERT INTO paypal_payments (payment_id, transaction_id, paypal_status, user_id) VALUES (?, ?, ?, ?)';
-    db.query(query, [paymentId, transactionId, paypalStatus, userId], (err) => {
+    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
+    db.query(insertPaymentQuery, [bookingId, 'paypal', 'completed', req.body.paymentAmount], (err, result) => {  // Use dynamic paymentAmount
         if (err) {
-            console.error('Error saving PayPal payment:', err);
-            res.status(500).json({ message: 'Error saving PayPal payment' });
-        } else {
-            res.json({ message: 'PayPal payment saved successfully' });
+            console.error('Error inserting payment:', err);
+            return res.status(500).json({ message: 'Error processing payment' });
         }
+
+
+        const payment_Id = result.insertId;
+
+        // Insert PayPal payment details dynamically
+        const insertPayPalPaymentQuery = 'INSERT INTO paypal_payments (payment_Id, payment_email, transaction_id, paypal_status) VALUES (?, ?, ?, ?)';
+        db.query(insertPayPalPaymentQuery, [payment_Id, payment_email, transaction_id, 'complete'], (err) => {
+            if (err) {
+                console.error('Error inserting PayPal payment:', err);
+                return res.status(500).json({ message: 'Error processing payment' });
+            } else {
+                res.json({ message: 'Payment processed successfully' });
+            }
+        });
     });
+});
+
+// Bank Transfer Payment route
+app.post('/api/bank-transfer-details', authenticateJWT, (req, res) => {
+    const { bookingId, bankName, accountNumber, transactionsCode, paymentAmount } = req.body;  // Ensure dynamic paymentAmount
+
+    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
+    db.query(insertPaymentQuery, [bookingId, 'bank-transfer', 'completed', paymentAmount], (err, result) => {  // Use dynamic paymentAmount
+        if (err) {  
+            console.error('Error inserting payment:', err);
+            return res.status(500).json({ message: 'Error processing payment' });
+        }
+
+        const paymentId = result.insertId;
+
+// Insert bank transfer details
+const insertBankTransferDetailsQuery = 'INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, transactions_code) VALUES (?, ?, ?, ?)';
+db.query(insertBankTransferDetailsQuery, [paymentId, bankName, accountNumber, transactionsCode], (err) => {
+    if (err) {
+        console.error('Error inserting bank transfer details:', err);
+        return res.status(500).json({ message: 'Error processing payment' });
+    } else {
+        res.json({ message: 'Payment processed successfully' });
+    }
+});
+});
 });
 
 // Mpesa Payment route
-app.post('/mpesa-payments', authenticateJWT, (req, res) => {
-    const { paymentId, mpesaNumber, transactionCode } = req.body;
-    const userId = req.user.id; // Get user ID from token
+app.post('/api/mpesa-payments', authenticateJWT, (req, res) => {
+    const { bookingId, mpesaNumber, transactionCode, paymentAmount } = req.body;  // Ensure dynamic paymentAmount
 
-    const query = 'INSERT INTO mpesa_payments (payment_id, mpesa_Number, transaction_Code) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [paymentId, mpesaNumber, transactionCode], (err) => {
+    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
+    db.query(insertPaymentQuery, [bookingId, 'mpesa', 'completed', paymentAmount], (err, result) => {  // Use dynamic paymentAmount
         if (err) {
-            console.error('Error saving Mpesa payment:', err);
-            res.status(500).json({ message: 'Error saving Mpesa payment' });
-        } else {
-            res.json({ message: 'Mpesa payment saved successfully' });
+            console.error('Error inserting payment:', err);
+            return res.status(500).json({ message: 'Error processing payment' });
         }
+
+        const paymentId = result.insertId;
+
+// Insert Mpesa payment details
+        const insertMpesaPaymentQuery = 'INSERT INTO mpesa_payments (payment_id, mpesa_number, transaction_code) VALUES (?, ?, ?)';
+        db.query(insertMpesaPaymentQuery, [paymentId, mpesaNumber, transactionCode], (err) => {
+            if (err) {
+                console.error('Error inserting Mpesa payment:', err);
+                return res.status(500).json({ message: 'Error processing payment' });
+            } else {
+                res.json({ message: 'Payment processed successfully' });
+            }
+        });
     });
-});
-
-// Route to get user details
-app.get('/api/get-user/:username', (req, res) => {
-    const username = req.params.username;
-    // Replace this with your actual logic to fetch user details
-    const user = user.find(u => u.username === username);
-
-    if (user) {
-        res.json({
-            userId: user.id
-        });
-    } else {
-        res.status(404).json({ message: 'User not found' });
-    }
-});
-
-// Route to get booking details
-app.get('/api/get-booking-details/:userId', (req, res) => {
-    const userId = parseInt(req.params.userId, 10);
-    // Replace this with your actual logic to fetch booking details
-    const booking = bookings.find(b => b.user_id === userId);
-
-    if (booking) {
-        res.json({
-            bookingId: booking.id,
-            paymentAmount: booking.amount
-        });
-    } else {
-        res.status(404).json({ message: 'Booking not found' });
-    }
 });
 
 // Start server

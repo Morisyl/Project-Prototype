@@ -8,7 +8,7 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to YnoVo Software Developers Ltd</h1>
+        <h1>Welcome to YnoVo Software Developers </h1>
 <nav>
     <ul>
         <li><a href="#home" onclick="showSection('home')">Home</a></li>
@@ -106,8 +106,9 @@
                 <h2>Booking</h2>
                 <div id="notification" class="notification hidden"></div>
         
-                <!-- Step 1: Personal and Service Info -->
+                <!-- Booking Form -->
                 <form id="booking-form">
+                    <!-- Step 1: Personal and Service Info -->
                     <div id="step-1" class="step active">
                         <!-- Personal Details Section -->
                         <div class="form-group">
@@ -157,88 +158,80 @@
                             <label for="details">Details:</label>
                             <textarea id="details" name="details" rows="4" placeholder="Provide more details about your booking" required></textarea>
                         </div>
-                        <button type="submit" class="btn-primary">Submit</button>
-
-                        <div class="button-group">
-                            <button type="button" class="btn-primary" onclick="nextStep()">Next: Payment</button>
-                        </div>
-                       
-                    </div>
-                   </form> 
         
-               <!-- Step 2: Payment Info and Submission -->
-<div id="step-2" class="step hidden">
-    <!-- Payment Section -->
-    <div class="form-group">
-        <label for="payment-method">Select Payment Method:</label>
-        <select id="payment-method" name="payment-method" required onchange="showPaymentInfo()">
-            <option value="" disabled selected>Select your payment method</option>
-            <option value="credit-card">Credit Card</option>
-            <option value="paypal">PayPal</option>
-            <option value="bank-transfer">Bank Transfer</option>
-            <option value="mpesa">Mpesa</option>
-        </select>
-    </div>
-
-    <!-- Credit Card Payment Info -->
-    <div id="credit-card-info" class="payment-info hidden">
-        <label for="card-number">Card Number:</label>
-        <input type="text" id="card-number" name="card-number" placeholder="1234-5678-9012-3456" required>
-        <label for="card-expiry">Expiry Date:</label>
-        <input type="text" id="card-expiry" name="card-expiry" placeholder="MM/YY" required>
-        <label for="card-cvc">CVC:</label>
-        <input type="text" id="card-cvc" name="card-cvc" placeholder="123" required>
-    </div>
-
-    <!-- PayPal Payment Info -->
-    <div id="paypal-info" class="payment-info hidden">
-        <p>Log in to your PayPal account to complete the payment.</p>
-        <a href="https://www.paypal.com" target="_blank">Click here to go to PayPal</a>
-    </div>
-
-    <!-- Bank Transfer Payment Info -->
-    <div id="bank-transfer-info" class="payment-info hidden">
-        <label for="phone-number-bank">Phone Number:</label>
-        <input type="text" id="phone-number-bank" name="phone-number-bank" placeholder="Your phone number" required>
-        <label for="transaction-cost-bank">Transaction Cost:</label>
-        <input type="text" id="transaction-cost-bank" name="transaction-cost-bank" placeholder="Transaction cost" required>
-        <p>Transfer the amount to the following bank details:</p>
-        <p>Bank Name: ABSI Bank</p>
-        <p>Account Number: 123456789</p>
-        <p>Account Name: Timothy</p>
-        <p>Sort Code: 12-34-56</p>
-    </div>
-
-    <!-- Mpesa Payment Info -->
-    <div id="mpesa-info" class="payment-info hidden">
-        <p>Transfer the amount to the following Mpesa Paybill:</p>
-        <p>PayBill: 800000</p>
-        <p>Account Number: 123456789</p>
-        <p>Account Name: Timothy</p>
-        <label for="mpesa-number">Mpesa Number:</label>
-        <input type="text" id="mpesa-number" name="mpesa-number" placeholder="Your Mpesa Number Starting with 01/07" required>
-        <label for="transaction-code">Transaction Code:</label>
-        <input type="text" id="transaction-code" name="transaction-code" placeholder="Please type in the transaction Code" required>
-    </div>
-
-    <!-- Payment Submission -->
-    <div class="form-group">
-        <button type="button" onclick="submitPayment()">Submit Payment</button>
-    </div>
-
-
-    
-                        <!-- Button Group -->
+                        <!-- Navigation Buttons -->
                         <div class="button-group">
-                            
-                            <button type="button" class="btn-secondary" onclick="previousStep()">Previous</button>
-                            <button type="submit" class="btn-primary">Submit</button>
+                            <button type="button" class="btn-primary" onclick="submitStep1()">Submit Step 1</button>
+                            <button type="button" class="btn-primary" id="nextBtn" onclick="goToStep(2)">Next: Payment</button>
+                        </div>
+                    </div> <!-- End of Step 1 -->
+        
+                    <!-- Step 2: Payment Info and Submission -->
+                    <div id="step-2" class="step hidden">
+                        <!-- Payment Section -->
+                        <div class="form-group">
+                            <label for="payment-method">Select Payment Method:</label>
+                            <select id="payment-method" name="payment-method" required onchange="showPaymentInfo()">
+                                <option value="" disabled selected>Select your payment method</option>
+                                <option value="credit-card">Credit Card</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="bank-transfer">Bank Transfer</option>
+                                <option value="mpesa">Mpesa</option>
+                            </select>
+                        </div>
+        
+                        <!-- Payment Info Sections (Initially Hidden) -->
+                        <div id="credit-card-info" class="payment-info hidden">
+                            <label for="card-number">Card Number:</label>
+                            <input type="text" id="card-number" name="card-number" placeholder="1234-5678-9012-3456" required>
+                            <label for="card-expiry">Expiry Date:</label>
+                            <input type="text" id="card-expiry" name="card-expiry" placeholder="MM/YY" required>
+                            <label for="card-cvc">CVC:</label>
+                            <input type="text" id="card-cvc" name="card-cvc" placeholder="123" required>
+                        </div>
+        
+                        <div id="paypal-info" class="payment-info hidden">
+                            <label for="payment-email">Payment Email:</label>
+                            <input type="text" id="payment-email" name="payment-email" placeholder="Your PayPal email" required>
+                            <label for="transaction-id">Transaction ID:</label>
+                            <input type="text" id="transaction-id" name="transaction-id" placeholder="Transaction ID" required>
+                        </div>
+        
+                        <div id="bank-transfer-info" class="payment-info hidden">
+                            <label for="account-name">Account Name:</label>
+                            <input type="text" id="account-name" name="account-name" placeholder="Your account name" required>
+                            <label for="account-number">Account Number:</label>
+                            <input type="text" id="account-number" name="account-number" placeholder="Your account number" required>
+                            <label for="transactions-code">Transactions Code:</label>
+                            <input type="text" id="transactions-code" name="transactions-code" placeholder="Transactions code" required>
+                        </div>
+        
+                        <div id="mpesa-info" class="payment-info hidden">
+                            <p>Transfer the amount to the following Mpesa Paybill:</p>
+                            <p>PayBill: 800000</p>
+                            <p>Account Number: 123456789</p>
+                            <p>Account Name: Timothy</p>
+                            <label for="mpesa-number">Mpesa Number:</label>
+                            <input type="text" id="mpesa-number" name="mpesa-number" placeholder="Your Mpesa Number Starting with 01/07" required>
+                            <label for="transaction-code">Transaction Code:</label>
+                            <input type="text" id="transaction-code" name="transaction-code" placeholder="Please type in the transaction Code" required>
+                        </div>
+        
+                        <!-- Payment Submission -->
+                        <div class="form-group">
+                            <button type="button" onclick="submitPayment()">Submit Payment</button>
+                        </div>
+        
+                        <!-- Navigation Buttons -->
+                        <div class="button-group">
+                            <button type="button" class="btn-primary" id="prevBtn" onclick="goToStep(1)">Previous</button>
                             <button type="reset" class="btn-secondary">Reset</button>
                         </div>
-                    </div>
+                    </div> <!-- End of Step 2 -->
                 </form>
             </div>
         </section>
+        
 
         <section id="enquiries" class="section hidden">
             <h2>Enquiries</h2>
