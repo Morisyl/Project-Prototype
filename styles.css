@@ -84,7 +84,7 @@ section {
     background-color: #fff; /* White background for sections for contrast */
     border-radius: 8px; /* Rounded corners for a modern look */
     margin: 20px auto; /* Centering the section with margin */
-    max-width: 800px; /* Max width for large screens */
+    max-width: 600px; /* Adjusted max width for a smaller, more compact form */
 }
 
 h2 {
@@ -97,7 +97,7 @@ h2 {
 
 /* Form styles */
 form {
-    max-width: 400px; /* Increased max-width for better readability */
+    max-width: 100%; /* Allow form to use full width of container */
     margin: 0 auto; /* Center the form */
     display: flex;
     flex-direction: column;
@@ -117,7 +117,7 @@ input, select, textarea {
     margin-bottom: 15px; /* Increased margin for better spacing */
     border: 1px solid #ccc;
     border-radius: 4px; /* Rounded corners for form elements */
-    width: 100%;
+    width: 100%; /* Full width of the container */
     box-sizing: border-box; /* Ensure padding and border are included in the element's total width and height */
 }
 
@@ -155,7 +155,7 @@ button:hover {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 600px; /* Adjusted max width for container */
     margin: 0 auto;
     padding: 20px;
 }
@@ -187,14 +187,16 @@ button:hover {
     margin-top: 10px;
     background-color: #f9f9f9;
     border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Light shadow for a consistent look */
 }
 
 /* Payment Info Section */
 .payment-info {
-    /* display: none; Hide by default */
-    background-color: #f1f1f1;
-    padding: 10px;
-    border-radius: 5px;
+    background-color: #f9f9f9; /* Consistent background color with other sections */
+    padding: 20px; /* Consistent padding with form */
+    border-radius: 8px; /* Rounded corners for consistency */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Light shadow for form elements */
+    margin-bottom: 20px; /* Add space between payment sections */
 }
 
 /* Show payment info for selected option */
@@ -206,16 +208,22 @@ button:hover {
 .button-group {
     display: flex;
     gap: 10px;
+    margin-top: 20px; /* Add spacing above the button group */
 }
 
 /* Primary Button */
 .btn-primary {
-    background-color: #007bff;
+    background-color: #007bff; /* Consistent primary button color */
     color: #fff;
     padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px; /* Consistent border-radius */
     cursor: pointer;
+    font-size: 1em; /* Consistent font size */
+}
+
+.btn-primary:hover {
+    background-color: #0056b3; /* Darker shade for hover effect */
 }
 
 /* Secondary Button */
@@ -224,42 +232,35 @@ button:hover {
     color: #fff;
     padding: 10px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
+    font-size: 1em; /* Consistent font size */
 }
 
-/* Input Styles */
-input[type="text"] {
-    width: 100%;
+.btn-secondary:hover {
+    background-color: #5a6268; /* Darker shade for hover effect */
+}
+
+/* Form Input Styles */
+input[type="text"], input[type="email"], input[type="number"], select, textarea {
+    width: 100%; /* Full width of the container */
     padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
+    border-radius: 4px; /* Rounded corners */
+    box-sizing: border-box; /* Ensure padding and border are included in the total width */
 }
 
-select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
+input:focus, select:focus, textarea:focus {
+    border-color: #007bff; /* Consistent focus border color */
+    outline: none; /* Remove default outline */
 }
 
-/* Focus Styles */
-input:focus, select:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-/* Style the form label */
+/* Form Label */
 label {
-    font-weight: bold;
-    margin-bottom: 5px;
-    display: inline-block;
+    font-weight: bold; /* Bold labels for readability */
+    margin-bottom: 5px; /* Space below labels */
+    display: block; /* Labels should be block elements for consistent spacing */
 }
 
 .section.hidden {
@@ -300,6 +301,7 @@ label {
     border: none;
     cursor: pointer;
 }
+
 .step {
     display: none;
 }
@@ -311,6 +313,7 @@ label {
 .step.hidden {
     display: none;
 }
+
 .button-group {
     display: flex;
     justify-content: space-between; /* Distribute space between buttons */
@@ -334,6 +337,7 @@ button[type="submit"] {
     background-color: #007bff;
     color: #fff;
 }
+
 #submitBtn {
     background-color: #007bff; /* Primary color for the submit button */
     color: #fff;

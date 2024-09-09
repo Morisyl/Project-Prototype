@@ -315,22 +315,30 @@ app.post('/payments', authenticateJWT, async (req, res) => {
     }
 });
 
-
 // Enquiry route
-app.post('/enquiries', authenticateJWT, (req, res) => {
+app.post('/enquiries', authenticateJWT, async (req, res) => {
     const { name, email, message } = req.body;
     const userId = req.user.id; // Get user ID from token
 
-    const query = 'INSERT INTO enquiries (user_id, name, email, message) VALUES (?, ?, ?, ?)';
-    connection.query(query, [userId, name, email, message], (err) => {
-        if (err) {
-            console.error('Error saving enquiry:', err);
-            res.status(500).json({ message: 'Error saving enquiry' });
-        } else {
-            res.json({ message: 'Enquiry saved successfully' });
-        }
-    });
+    // Simple validation
+    if (!name || !email || !message) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    console.log('Received enquiry:', { userId, name, email, message });
+
+    const query = promisify(connection.query).bind(connection);
+
+    try {
+        await query('INSERT INTO enquiries (user_id, name, email, message) VALUES (?, ?, ?, ?)', [userId, name, email, message]);
+        res.json({ message: 'Enquiry saved successfully' });
+    } catch (err) {
+        console.error('Error saving enquiry:', err);
+        res.status(500).json({ message: 'Error saving enquiry', error: err.message });
+    }
 });
+
+
 
 // Register Route
 app.post('/register', async (req, res) => {
