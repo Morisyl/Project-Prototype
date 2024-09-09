@@ -1,0 +1,41 @@
+1. Open CMD
+2. cd path/to/your/projects
+3. python -m venv myenv
+4. myenv\Scripts\activate
+5. pip install django djangorestframework
+6. django-admin startproject myproject
+7. cd myproject
+8. python manage.py startapp myapp
+9. ADD myapp to your project
+   INSTALLED_APPS = [
+    # other apps
+    'myapp',
+    'rest_framework',  # Add this if using Django REST Framework
+]
+10. Define your Models
+11. Create and apply migrations
+12. set up django REST framework 
+13. Create API views
+14. Set up API URLs
+15. Include API URls in Project URLs
+16. Create admin interface(optional)
+17. Test your application
+
+
+or
+
+1. create a project folder
+2. click anywhere in the rootfolder and type powershell and click enter
+2. pip install virtualenv
+3. virualenv djangoProject1(your project name)
+4. cd project name
+5. Scripts\activate
+
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser(OPTIONAL - if you getting an error)
+
+6. pip install django
+7. django-admin startproject mysite(name it anything)
+8. cd mysite
+9. python manage.py runserver
+10. ctrl + c to quit server
+

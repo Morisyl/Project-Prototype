@@ -8,19 +8,25 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const crypto = require('crypto');
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to verify JWT tokens
+// JWT authentication middleware
 const authenticateJWT = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
+    const authHeader = req.headers['authorization']; // Get the Authorization header
     const token = authHeader && authHeader.split(' ')[1];
-    
-    if (token == null) return res.sendStatus(401);
-    
+
+    if (token == null) { 
+        return res.status(401).json({ message: 'No token provided' }); // No token, unauthorized
+    }
+
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            return res.status(403).json({ message: 'Invalid or expired token' }); // Invalid or expired token
+        }
+        
         req.user = user;
         next();
     });
@@ -30,165 +36,203 @@ const authenticateJWT = (req, res, next) => {
 const blacklistedTokens = [];
 
 function isTokenBlacklisted(req, res, next) {
-    const token = req.headers['authorization']?.split(' ')[1]; // Extract token from Authorization header
+    const token = req.headers['authorization']?.split(' ')[1];
     if (blacklistedTokens.includes(token)) {
         return res.status(401).json({ message: 'Token is blacklisted.' });
     }
-    next(); // Continue to the next middleware or route handler if token is not blacklisted
+    next();
 }
-module.exports = isTokenBlacklisted;
 
-
-// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());// For parsing application/json
-app.use(express.static(path.join(__dirname))); // Serve static files from the public directory
-app.use(helmet()); // Set security headers
-app.use(authenticateJWT);  
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname)));
+app.use(helmet());
+app.use(cors());
+app.use('/booking', authenticateJWT);
+app.use('/enquiries', authenticateJWT);
+// app.use('/payments', authenticateJWT);
 
-
-
-// MySQL database connection setup
-const db = mysql.createConnection({
+// Create a connection to the MySQL server
+const connection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    password: process.env.DB_PASSWORD
 });
 
-db.connect((err) => {
+// Connect to the MySQL server
+connection.connect(err => {
     if (err) {
-        console.error('Error connecting to database:', err);
+        console.error('Error connecting to MySQL server:', err);
         return;
     }
-    console.log('Connected to database');
+    console.log('Connected to MySQL server.');
 
-    // Promisify query for easier usage with async/await
-    const query = promisify(db.query).bind(db);
-    
-    // Create tables if they don't exist
-    const createTables = async () => {
-        try {
-            // Users Table
-            const createUsersTable = `
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `;
-    
-            // Bookings Table
-            const createBookingsTable = `
-                CREATE TABLE IF NOT EXISTS bookings (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT,
-                    name VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    gender ENUM('male', 'female') NOT NULL,
-                    home_phone VARCHAR(20),
-                    office_phone VARCHAR(20),
-                    service VARCHAR(255) NOT NULL,
-                    details TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Enquiries Table
-            const createEnquiriesTable = `
-                CREATE TABLE IF NOT EXISTS enquiries (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT,
-                    name VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL,
-                    message TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Payments Table
-            const createPaymentsTable = `
-                CREATE TABLE IF NOT EXISTS payments (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    booking_id INT,
-                    payment_method ENUM('credit-card', 'paypal', 'bank-transfer', 'mpesa') NOT NULL,
-                    payment_status ENUM('pending', 'completed', 'failed') NOT NULL,
-                    payment_amount DECIMAL(10, 2) NOT NULL,
-                    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Credit Card Payments Table
-            const createCreditCardPaymentsTable = `
-                CREATE TABLE IF NOT EXISTS credit_card_payments (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    payment_id INT,
-                    card_number VARCHAR(20) NOT NULL,
-                    expiry_date VARCHAR(5) NOT NULL,
-                    cvc VARCHAR(4) NOT NULL,
-                    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Bank Transfer Details Table
-            const createBankTransferDetailsTable = `
-                CREATE TABLE IF NOT EXISTS bank_transfer_details (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    payment_id INT,
-                    bank_name VARCHAR(255) NOT NULL,
-                    account_number INT(20) NOT NULL,
-                    transactions_code VARCHAR(10) NOT NULL,
-                    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // PayPal Payments Table
-            const createPayPalPaymentsTable = `
-                CREATE TABLE IF NOT EXISTS paypal_payments (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    payment_id INT,
-                    payment_email VARCHAR(25) NOT NULL,
-                    transaction_id VARCHAR(255) NOT NULL,
-                    paypal_status ENUM('pending', 'completed') NOT NULL,
-                    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Mpesa Payments Table
-            const createMpesaPaymentsTable = `
-                CREATE TABLE IF NOT EXISTS mpesa_payments (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    payment_id INT,
-                    mpesaNumber VARCHAR(10) NOT NULL,
-                    transactionCode VARCHAR(10) NOT NULL,
-                    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-                )
-            `;
-    
-            // Execute all table creation queries
-            await query(createUsersTable);
-            await query(createBookingsTable);
-            await query(createEnquiriesTable);
-            await query(createPaymentsTable);
-            await query(createCreditCardPaymentsTable);
-            await query(createBankTransferDetailsTable);
-            await query(createPayPalPaymentsTable);
-            await query(createMpesaPaymentsTable);
-     
-            console.log('All tables created successfully!');
-        } catch (error) {
-            console.error('Error creating tables:', error);
+    // Check if the database exists
+    const dbName = process.env.DB_NAME;
+    connection.query(`SHOW DATABASES LIKE '${dbName}'`, (err, results) => {
+        if (err) {
+            console.error('Error checking database existence:', err);
+            connection.end();
+            return;
         }
-    }
-    
-    // Call the createTables function
-    createTables();
+
+        if (results.length === 0) {
+            // Database does not exist, create it
+            connection.query(`CREATE DATABASE ${dbName}`, err => {
+                if (err) {
+                    console.error('Error creating database:', err);
+                } else {
+                    console.log('Database created successfully.');
+                }
+                // After creating the database, connect to it and create tables
+                setupDatabase();
+            });
+        } else {
+            console.log('Database already exists.');
+            // Connect to the existing database and create tables
+            setupDatabase();
+        }
+    });
 });
+
+// Function to setup the database and create tables
+async function setupDatabase() {
+    return new Promise((resolve, reject) => {
+        // Update the connection with the specific database
+        connection.changeUser({ database: process.env.DB_NAME }, async err => {
+            if (err) {
+                console.error('Error selecting database:', err);
+                return reject(err);
+            }
+            console.log('Connected to MySQL database.');
+
+            // Promisify query for easier usage with async/await
+            const query = promisify(connection.query).bind(connection);
+
+            // Create tables if they don't exist
+            const createTables = async () => {
+                try {
+                    const createUsersTable = `
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            username VARCHAR(255) NOT NULL,
+                            email VARCHAR(255) UNIQUE NOT NULL,
+                            password VARCHAR(255) NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `;
+
+                    const createBookingsTable = `
+                        CREATE TABLE IF NOT EXISTS bookings (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            user_id INT,
+                            name VARCHAR(255) NOT NULL,
+                            email VARCHAR(255) NOT NULL,
+                            gender ENUM('male', 'female') NOT NULL,
+                            phone_number VARCHAR(20),
+                            service VARCHAR(255) NOT NULL,
+                            details TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createEnquiriesTable = `
+                        CREATE TABLE IF NOT EXISTS enquiries (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            user_id INT,
+                            name VARCHAR(255) NOT NULL,
+                            email VARCHAR(255) NOT NULL,
+                            message TEXT NOT NULL,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createPaymentsTable = `
+                        CREATE TABLE IF NOT EXISTS payments (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            booking_id INT,
+                            payment_method ENUM('credit-card', 'paypal', 'bank-transfer', 'mpesa') NOT NULL,
+                            payment_status ENUM('pending', 'completed', 'failed') NOT NULL,
+                            payment_amount DECIMAL(10, 2) NOT NULL,
+                            payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createCreditCardPaymentsTable = `
+                        CREATE TABLE IF NOT EXISTS credit_card_payments (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            payment_id INT,
+                            card_number VARCHAR(20) NOT NULL,
+                            expiry_date VARCHAR(5) NOT NULL,
+                            cvc VARCHAR(4) NOT NULL,
+                            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createBankTransferDetailsTable = `
+                        CREATE TABLE IF NOT EXISTS bank_transfer_details (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            payment_id INT,
+                            bank_name VARCHAR(255) NOT NULL,
+                            account_number VARCHAR(20) NOT NULL,
+                            transactions_code VARCHAR(10) NOT NULL,
+                            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createPayPalPaymentsTable = `
+                        CREATE TABLE IF NOT EXISTS paypal_payments (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            payment_id INT,
+                            payment_email VARCHAR(255) NOT NULL,
+                            transaction_id VARCHAR(255) NOT NULL,
+                            paypal_status ENUM('pending', 'completed') NOT NULL,
+                            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    const createMpesaPaymentsTable = `
+                        CREATE TABLE IF NOT EXISTS mpesa_payments (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            payment_id INT,
+                            mpesa_number VARCHAR(10) NOT NULL,
+                            transaction_code VARCHAR(10) NOT NULL,
+                            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+                        )
+                    `;
+
+                    // Execute all table creation queries
+                    await query(createUsersTable);
+                    await query(createBookingsTable);
+                    await query(createEnquiriesTable);
+                    await query(createPaymentsTable);
+                    await query(createCreditCardPaymentsTable);
+                    await query(createBankTransferDetailsTable);
+                    await query(createPayPalPaymentsTable);
+                    await query(createMpesaPaymentsTable);
+
+                    console.log('All tables created successfully!');
+                    resolve(); // Resolve the promise when done
+                } catch (error) {
+                    console.error('Error creating tables:', error);
+                    reject(error); // Reject the promise if there's an error
+                }
+            };
+
+            // Call the createTables function
+            await createTables();
+        });
+    });
+}
+
+// Call setupDatabase function and handle errors
+setupDatabase().catch(error => {
+    console.error('Error setting up database:', error);
+});
+
 
 // Middleware Encryption configuration
 const algorithm = 'aes-256-cbc';
@@ -226,19 +270,51 @@ app.get('/login', (req, res) => {
 
 // Booking route
 app.post('/booking', authenticateJWT, (req, res) => {
-    const { name, email, gender, homePhone, officePhone, service, details } = req.body;
+    const { name, email, gender, phone_number, service, details } = req.body;
     const userId = req.user.id; // Get user ID from token
 
-    const query = 'INSERT INTO bookings (user_id, name, email, gender, home_phone, office_phone, service, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [userId, name, email, gender, homePhone, officePhone, service, details], (err) => {
+    const query = 'INSERT INTO bookings (user_id, name, email, gender, phone_number, service, details) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    connection.query(query, [userId, name, email, gender, phone_number, service, details], function (err, result) {
         if (err) {
             console.error('Error saving booking:', err);
             res.status(500).json({ message: 'Error saving booking' });
         } else {
-            res.json({ message: 'Booking saved successfully' });
+            const bookingId = result.insertId; // Get the newly created booking ID
+            res.json({ message: 'Booking saved successfully', booking_id: bookingId });
         }
     });
 });
+
+// Route to handle payment creation
+app.post('/payments', authenticateJWT, async (req, res) => {
+    const { booking_id } = req.body;
+
+    if (!booking_id) {
+        return res.status(400).json({ message: 'Missing booking_id.' });
+    }
+
+    try {
+        // Get booking details
+        const bookingDetails = await query('SELECT * FROM bookings WHERE id = ?', [booking_id]);
+
+        if (bookingDetails.length === 0) {
+            return res.status(404).json({ message: 'Booking not found.' });
+        }
+
+        // For demonstration, we're using hardcoded values for payment method and status
+        const payment_method = 'credit-card'; // Example
+        const payment_status = 'complete'; // Example
+        const payment_amount = 100.00; // Example, you can calculate or fetch the amount from somewhere
+
+        // Insert payment record
+        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, payment_method, payment_status, payment_amount]);
+
+        res.status(201).json({ message: 'Payment record created.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating payment record.', error });
+    }
+});
+
 
 // Enquiry route
 app.post('/enquiries', authenticateJWT, (req, res) => {
@@ -246,7 +322,7 @@ app.post('/enquiries', authenticateJWT, (req, res) => {
     const userId = req.user.id; // Get user ID from token
 
     const query = 'INSERT INTO enquiries (user_id, name, email, message) VALUES (?, ?, ?, ?)';
-    db.query(query, [userId, name, email, message], (err) => {
+    connection.query(query, [userId, name, email, message], (err) => {
         if (err) {
             console.error('Error saving enquiry:', err);
             res.status(500).json({ message: 'Error saving enquiry' });
@@ -256,7 +332,7 @@ app.post('/enquiries', authenticateJWT, (req, res) => {
     });
 });
 
-// Registration route
+// Register Route
 app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
@@ -269,7 +345,7 @@ app.post('/register', async (req, res) => {
         // Check if email already exists
         const checkQuery = 'SELECT * FROM users WHERE email = ?';
         const existingUser = await new Promise((resolve, reject) => {
-            db.query(checkQuery, [email], (err, results) => {
+            connection.query(checkQuery, [email], (err, results) => {
                 if (err) return reject(err);
                 resolve(results.length ? results[0] : null);  
             });
@@ -284,30 +360,19 @@ app.post('/register', async (req, res) => {
 
         // Insert the new user
         const insertQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-        try {
-            await new Promise((resolve, reject) => {
-                db.query(insertQuery, [username, email, hashedPassword], (err, results) => {
-                    if (err) {
-                        if (err.code === 'ER_DUP_ENTRY') {
-                            return reject(new Error('Email already registered'));
-                        }
-                        return reject(err);  // Handle other errors
-                    }
-                    resolve(results);
-                });
+        await new Promise((resolve, reject) => {
+            connection.query(insertQuery, [username, email, hashedPassword], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
             });
-            res.status(201).json({ message: 'Registration successful' });
-        } catch (err) {
-            console.error('Error during registration:', err.message);
-            res.status(500).json({ message: err.message });
-        }
-        
+        });
+
         // Return success message
         res.status(201).json({ message: 'Registration successful' });
 
     } catch (err) {
-        console.error('Error during registration:', err);
-        res.status(500).json({ message: 'Error registering user' });
+        console.error('Error during registration:', err.message);
+        res.status(500).json({ message: err.message });
     }
 });
 
@@ -316,7 +381,7 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     const query = 'SELECT * FROM users WHERE email = ?';
-    db.query(query, [email], async (err, results) => {
+    connection.query(query, [email], async (err, results) => {
         if (err) {
             console.error('Error fetching user:', err);
             return res.status(500).json({ message: 'Error logging in' });
@@ -366,22 +431,6 @@ app.post('/protected', isTokenBlacklisted, (req, res) => {
 });
 
 
-// Payment routes
-app.post('/payments', authenticateJWT, (req, res) => {
-    const { bookingId, paymentMethod, paymentStatus, paymentAmount } = req.body;
-    const userId = req.user.id; // Get user ID from token
-
-    const query = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount, user_id) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [bookingId, paymentMethod, paymentStatus, paymentAmount, userId], (err) => {
-        if (err) {
-            console.error('Error processing payment:', err);
-            res.status(500).json({ message: 'Error processing payment' });
-        } else {
-            res.json({ message: 'Payment processed successfully' });
-        }
-    });
-});
-
 // Credit Card Payment route
 app.post('/api/credit-card-payments', (req, res) => {
     const { bookingId, paymentAmount, cardNumber, expiryDate, cvc } = req.body;
@@ -393,7 +442,7 @@ app.post('/api/credit-card-payments', (req, res) => {
 
      // Dynamically use the payment amount passed from the request
     const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
-    db.query(insertPaymentQuery, [bookingId, 'credit-card', 'completed', paymentAmount], (err, result) => {
+    connection.query(insertPaymentQuery, [bookingId, 'credit-card', 'completed', paymentAmount], (err, result) => {
         if (err) {
             console.error('Error inserting payment:', err);
             return res.status(500).json({ message: 'Error processing payment' });
@@ -404,7 +453,7 @@ app.post('/api/credit-card-payments', (req, res) => {
 
  // Insert the encrypted card details and store the IV
  const insertCreditCardPaymentQuery = 'INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc, iv) VALUES (?, ?, ?, ?, ?)';
- db.query(insertCreditCardPaymentQuery, [paymentId, encryptedCardNumber.encryptedData, encryptedExpiryDate.encryptedData, encryptedCvc.encryptedData, encryptedCardNumber.iv], (err) => {
+ connection.query(insertCreditCardPaymentQuery, [paymentId, encryptedCardNumber.encryptedData, encryptedExpiryDate.encryptedData, encryptedCvc.encryptedData, encryptedCardNumber.iv], (err) => {
      if (err) {
          console.error('Error inserting credit card payment:', err);
          return res.status(500).json({ message: 'Error processing payment' });
@@ -421,7 +470,7 @@ app.get('/api/decrypted-card-details/:paymentId', (req, res) => {
     const paymentId = parseInt(req.params.paymentId, 10);
 
     const query = 'SELECT * FROM credit_card_payments WHERE payment_id = ?';
-    db.query(query, [paymentId], (err, results) => {
+    connection.query(query, [paymentId], (err, results) => {
         if (err) {
             console.error('Error fetching card details:', err);
             return res.status(500).json({ message: 'Error fetching card details' });
@@ -445,83 +494,88 @@ app.get('/api/decrypted-card-details/:paymentId', (req, res) => {
     });
 });
 
-// PayPal Payment route
-app.post('/api/paypal-payments', authenticateJWT, (req, res) => {
-    const { bookingId, payment_email, transaction_id } = req.body;  // Ensure dynamic data from request
+// Example route for handling payments with credit card details
+app.post('credit-card', authenticateJWT, async (req, res) => {
+    const { booking_id, card_number, expiry_date, cvc } = req.body;
 
-    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
-    db.query(insertPaymentQuery, [bookingId, 'paypal', 'completed', req.body.paymentAmount], (err, result) => {  // Use dynamic paymentAmount
-        if (err) {
-            console.error('Error inserting payment:', err);
-            return res.status(500).json({ message: 'Error processing payment' });
-        }
+    if (!booking_id || !card_number || !expiry_date || !cvc) {
+        return res.status(400).json({ message: 'Missing required fields for credit card payment.' });
+    }
 
+    try {
+        // Insert payment record
+        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'credit-card', 'pending', 100.00]);
+        
+        // Insert credit card details
+        await query('INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?, ?)', [booking_id, card_number, expiry_date, cvc]);
 
-        const payment_Id = result.insertId;
-
-        // Insert PayPal payment details dynamically
-        const insertPayPalPaymentQuery = 'INSERT INTO paypal_payments (payment_Id, payment_email, transaction_id, paypal_status) VALUES (?, ?, ?, ?)';
-        db.query(insertPayPalPaymentQuery, [payment_Id, payment_email, transaction_id, 'complete'], (err) => {
-            if (err) {
-                console.error('Error inserting PayPal payment:', err);
-                return res.status(500).json({ message: 'Error processing payment' });
-            } else {
-                res.json({ message: 'Payment processed successfully' });
-            }
-        });
-    });
-});
-
-// Bank Transfer Payment route
-app.post('/api/bank-transfer-details', authenticateJWT, (req, res) => {
-    const { bookingId, bankName, accountNumber, transactionsCode, paymentAmount } = req.body;  // Ensure dynamic paymentAmount
-
-    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
-    db.query(insertPaymentQuery, [bookingId, 'bank-transfer', 'completed', paymentAmount], (err, result) => {  // Use dynamic paymentAmount
-        if (err) {  
-            console.error('Error inserting payment:', err);
-            return res.status(500).json({ message: 'Error processing payment' });
-        }
-
-        const paymentId = result.insertId;
-
-// Insert bank transfer details
-const insertBankTransferDetailsQuery = 'INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, transactions_code) VALUES (?, ?, ?, ?)';
-db.query(insertBankTransferDetailsQuery, [paymentId, bankName, accountNumber, transactionsCode], (err) => {
-    if (err) {
-        console.error('Error inserting bank transfer details:', err);
-        return res.status(500).json({ message: 'Error processing payment' });
-    } else {
-        res.json({ message: 'Payment processed successfully' });
+        res.status(201).json({ message: 'Credit card payment record created.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating credit card payment record.', error });
     }
 });
+
+// Example route for handling payments with PayPal
+app.post('paypal', authenticateJWT, async (req, res) => {
+    const { booking_id, payment_email, transaction_id } = req.body;
+
+    if (!booking_id || !payment_email || !transaction_id) {
+        return res.status(400).json({ message: 'Missing required fields for PayPal payment.' });
+    }
+
+    try {
+        // Insert payment record
+        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'paypal', 'pending', 100.00]);
+        
+        // Insert PayPal details
+        await query('INSERT INTO paypal_payments (payment_id, payment_email, transaction_id) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?)', [booking_id, payment_email, transaction_id]);
+
+        res.status(201).json({ message: 'PayPal payment record created.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating PayPal payment record.', error });
+    }
 });
+
+// Example route for handling payments with bank transfer
+app.post('bank-transfer', authenticateJWT, async (req, res) => {
+    const { booking_id, bank_name, account_number, transactions_code } = req.body;
+
+    if (!booking_id || !bank_name || !account_number || !transactions_code) {
+        return res.status(400).json({ message: 'Missing required fields for bank transfer payment.' });
+    }
+
+    try {
+        // Insert payment record
+        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'bank-transfer', 'pending', 100.00]);
+        
+        // Insert bank transfer details
+        await query('INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, transactions_code) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?, ?)', [booking_id, bank_name, account_number, transactions_code]);
+
+        res.status(201).json({ message: 'Bank transfer payment record created.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating bank transfer payment record.', error });
+    }
 });
 
-// Mpesa Payment route
-app.post('/api/mpesa-payments', authenticateJWT, (req, res) => {
-    const { bookingId, mpesaNumber, transactionCode, paymentAmount } = req.body;  // Ensure dynamic paymentAmount
+// Example route for handling payments with Mpesa
+app.post('mpesa', authenticateJWT, async (req, res) => {
+    const { booking_id, mpesa_number, transaction_code } = req.body;
 
-    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
-    db.query(insertPaymentQuery, [bookingId, 'mpesa', 'completed', paymentAmount], (err, result) => {  // Use dynamic paymentAmount
-        if (err) {
-            console.error('Error inserting payment:', err);
-            return res.status(500).json({ message: 'Error processing payment' });
-        }
+    if (!booking_id || !mpesa_number || !transaction_code) {
+        return res.status(400).json({ message: 'Missing required fields for Mpesa payment.' });
+    }
 
-        const paymentId = result.insertId;
+    try {
+        // Insert payment record
+        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'mpesa', 'pending', 100.00]);
+        
+        // Insert Mpesa details
+        await query('INSERT INTO mpesa_payments (payment_id, mpesa_number, transaction_code) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?)', [booking_id, mpesa_number, transaction_code]);
 
-// Insert Mpesa payment details
-        const insertMpesaPaymentQuery = 'INSERT INTO mpesa_payments (payment_id, mpesa_number, transaction_code) VALUES (?, ?, ?)';
-        db.query(insertMpesaPaymentQuery, [paymentId, mpesaNumber, transactionCode], (err) => {
-            if (err) {
-                console.error('Error inserting Mpesa payment:', err);
-                return res.status(500).json({ message: 'Error processing payment' });
-            } else {
-                res.json({ message: 'Payment processed successfully' });
-            }
-        });
-    });
+        res.status(201).json({ message: 'Mpesa payment record created.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating Mpesa payment record.', error });
+    }
 });
 
 // Start server

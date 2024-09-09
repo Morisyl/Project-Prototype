@@ -198,9 +198,9 @@ button:hover {
 }
 
 /* Show payment info for selected option */
-/* .payment-info.show { */
-    /* display: block; */
-
+.payment-info.show {
+    display: block; /* Show when needed */
+}
 
 /* Button Group Styles */
 .button-group {

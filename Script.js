@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('There was an error with your booking. Please try again.', 'error');
+                showNotification ('There was an error with your booking. Please try again.', 'error');
             }
         });
     }
@@ -260,41 +260,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    function goToStep(stepNumber) {
-        const steps = document.querySelectorAll('.step');
-        steps.forEach(step => {
-            step.classList.add('hidden');
-            step.classList.remove('active');
-        });
+    // Function to move to the next step
+    function goToStep() {
+        console.log('Next button clicked');
+        const currentStep = document.querySelector('.step.active');
+        const nextStep = currentStep.nextElementSibling;
 
-        const targetStep = document.getElementById(`step-${stepNumber}`);
-        if (targetStep) {
-            targetStep.classList.remove('hidden');
-            targetStep.classList.add('active');
+        if (nextStep) {
+            currentStep.classList.add('hidden');
+            currentStep.classList.remove('active');
+            nextStep.classList.remove('hidden');
+            nextStep.classList.add('active');
         } else {
-            console.error(`Step ${stepNumber} not found.`);
+            console.error("Next step not found or invalid.");
         }
     }
 
-    // Event listener for the 'Next' button
-    document.getElementById('nextBtn').addEventListener('click', function() {
-        goToStep(2); // Go to Step 2
-    });
+    // Function to move to the previous step
+    function previousStep() {
+        console.log('Previous button clicked');
+        const currentStep = document.querySelector('.step.active');
+        const previousStep = currentStep.previousElementSibling;
 
-    // Event listener for the 'Previous' button
-    document.getElementById('prevBtn').addEventListener('click', function() {
-        goToStep(1); // Go back to Step 1
-    });
-
-    // Optional: Handle form submission if necessary
-    document.getElementById('submit.booking-form').addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-
-        // Collect form values and handle submission as needed
-        console.log("Form submitted!"); // Replace with your form submission logic
-    });
+        if (previousStep) {
+            currentStep.classList.add('hidden');
+            currentStep.classList.remove('active');
+            previousStep.classList.remove('hidden');
+            previousStep.classList.add('active');
+        } else {
+            console.error("Previous step not found or invalid.");
+        }
+    }
 });
+    // Attach event listeners to the buttons
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
 
+    if (nextBtn) {
+        nextBtn.addEventListener('click', nextStep);
+    } else {
+        console.error('Next button not found.');
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', previousStep);
+    } else {
+        console.error('Previous button not found.');
+    }
 
 // Function to handle enquiry form submission
 document.getElementById('enquiries-form')?.addEventListener('submit', async function (event) {
@@ -634,7 +646,7 @@ function showLoader() {
 
 function hideLoader() {
     document.getElementById('loader').classList.add('hidden');
-}
+} 
 
 // Save payment methods (example functions, need to be implemented)
 async function saveCreditCardPayment(details) {
@@ -711,6 +723,3 @@ function showLoader() {
 function hideLoader() {
     document.getElementById('loader').classList.add('hidden');
 }
-
-
-
