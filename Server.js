@@ -505,7 +505,7 @@ app.get('/decrypted-card-details/:paymentId', async (req, res) => {
     }
 });
 
-
+// Route for handling payments with credit card
 app.post('/credit-card-payments', async (req, res) => {
     console.log('Received data for Credit Card:', req.body); // Log data
     const { booking_id,card_number, expiry_date, cvc } = req.body;
@@ -608,7 +608,6 @@ app.post('/mpesa-payments', async (req, res) => {
         res.status(500).json({ message: 'Error creating Mpesa payment record.', error });
     }
 });
-
 
 // Start server
 app.listen(port, () => {
