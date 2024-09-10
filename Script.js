@@ -66,7 +66,7 @@ function checkLogin(sectionId) {
     if (token && isValidToken(token)) {
         showSection(sectionId);
     } else {
-        alert("You need to log in to access this section.");
+        showNotification("You need to log in to access this section.",'error');
         showSection('register');
     }
 }
@@ -102,7 +102,7 @@ async function logoutUser() {
         // If successful, clear localStorage and update UI
         localStorage.removeItem('userLoggedIn');
         localStorage.removeItem('token');
-        alert("You have been logged out.");
+        showNotification("You have been logged out.",'error');
 
         // Update the UI to reflect the logged-out state
         document.getElementById('logout-link').classList.add('hidden');
@@ -112,7 +112,7 @@ async function logoutUser() {
         showSection('home');
     } catch (error) {
         console.error('Error during logout:', error);
-        alert("There was an issue logging out. Please try again.");
+        showNotification("There was an issue logging out. Please try again.",'info');
     }
 }
 
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const cardExpiry = document.getElementById('card-expiry').value;
                     const cardCvc = document.getElementById('card-cvc').value;
                     if (!cardNumber || !cardExpiry || !cardCvc) {
-                        alert('Please provide all required credit card details.');
+                        showNotification('Please provide all required credit card details.','error');
                         return;
                     }
                     await saveCreditCardPayment({ cardNumber, cardExpiry, cardCvc });
@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const paymentEmail = document.getElementById('payment-email').value;
                     const transactionId = document.getElementById('transaction-id').value;
                     if (!paymentEmail || !transactionId) {
-                        alert('Please provide all required PayPal details.');
+                        showNotification('Please provide all required PayPal details.','error');
                         return;
                     }
                     await savePayPalPayment({ paymentEmail, transactionId });
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const transactionsCode = document.getElementById('transactions-code').value;
                     const phoneNumber = document.getElementById('phone-number').value;
                     if (!bankName || !accountNumber || !transactionsCode || !phoneNumber) {
-                        alert('Please provide all required bank transfer details.');
+                        showNotification('Please provide all required bank transfer details.','error');
                         return;
                     }
                     await saveBankTransferDetails({ bankName, accountNumber, phoneNumber, transactionsCode });
@@ -609,19 +609,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     const mpesaNumber = document.getElementById('mpesa-number').value;
                     const mpesaTransactionCode = document.getElementById('transaction-code').value;
                     if (!mpesaNumber || !mpesaTransactionCode) {
-                        alert('Please provide all required Mpesa details.');
+                        showNotification('Please provide all required Mpesa details.','error');
                         return;
                     }
                     await saveMpesaPayment({ mpesaNumber, mpesaTransactionCode });
                     break;
 
                 default:
-                    alert('Invalid payment method selected.');
+                    showNotification('Invalid payment method selected.','error');
                     break;
             }
         } catch (error) {
             console.error('Payment processing error:', error);
-            alert('An error occurred while processing your payment.');
+            showNotification('An error occurred while processing your payment.','error');
         } finally {
             // Hide loader
             hideLoader();
@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function () {
 async function saveCreditCardPayment(details) {
     const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
     if (!bookingId) {
-        alert('No booking ID found.');
+        showNotification('No booking ID found.','error');
         return;
     }
 
@@ -664,9 +664,9 @@ async function saveCreditCardPayment(details) {
 
     const result = await response.json();
     if (response.ok) {
-        alert('Credit Card payment processed successfully.');
+        showNotification('Credit Card payment processed successfully.','success');
     } else {
-        alert(`Error: ${result.message}`);
+        showNotification(`Error: ${result.message}`,'error');
     }
 }
 
@@ -674,7 +674,7 @@ async function saveCreditCardPayment(details) {
 async function savePayPalPayment(details) {
     const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
     if (!bookingId) {
-        alert('No booking ID found.');
+        showNotification('No booking ID found.','error');
         return;
     }
 
@@ -690,9 +690,9 @@ async function savePayPalPayment(details) {
 
     const result = await response.json();
     if (response.ok) {
-        alert('PayPal payment processed successfully.');
+        showNotification( 'PayPal payment processed successfully.','success');
     } else {
-        alert(`Error: ${result.message}`);
+        showNotification( `Error: ${result.message}`,'error');
     }
 }
 
@@ -700,7 +700,7 @@ async function savePayPalPayment(details) {
 async function saveBankTransferDetails(details) {
     const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
     if (!bookingId) {
-        alert('No booking ID found.');
+        showNotification('No booking ID found.','error');
         return;
     }
 
@@ -718,9 +718,9 @@ async function saveBankTransferDetails(details) {
 
     const result = await response.json();
     if (response.ok) {
-        alert('Bank Transfer payment processed successfully.');
+        showNotification( 'Bank Transfer payment processed successfully.','success');
     } else {
-        alert(`Error: ${result.message}`);
+        showNotification( `Error: ${result.message}`,'error');
     }
 }
 
@@ -729,7 +729,7 @@ async function saveBankTransferDetails(details) {
 async function saveMpesaPayment(details) {
     const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
     if (!bookingId) {
-        alert('No booking ID found.');
+        showNotification('No booking ID found.','error');
         return;
     }
 
@@ -745,18 +745,19 @@ async function saveMpesaPayment(details) {
 
     const result = await response.json();
     if (response.ok) {
-        alert('Mpesa payment processed successfully.');
+        showNotification('Mpesa payment processed successfully.','success');
     } else {
-        alert(`Error: ${result.message}`);
+        showNotification(`Error: ${result.message}`,'error');
     }
 }
+
 
     
     // Get headers with Authorization if needed
     function getHeaders() {
         return {
             'Content-Type': 'application/json',
-            // 'Authorization': 'Bearer ' + localStorage.getItem('token')
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
         };
     }
 });
