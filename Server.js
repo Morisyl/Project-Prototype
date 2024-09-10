@@ -50,7 +50,7 @@ app.use(helmet());
 app.use(cors());
 app.use('/booking', authenticateJWT);
 app.use('/enquiries', authenticateJWT);
-// app.use('/payments', authenticateJWT);
+app.use('/payments', authenticateJWT);
 
 // Create a connection to the MySQL server
 const connection = mysql.createConnection({
@@ -285,6 +285,7 @@ app.post('/booking', authenticateJWT, (req, res) => {
     });
 });
 
+
 // Route to handle payment creation
 app.post('/payments', authenticateJWT, async (req, res) => {
     const { booking_id } = req.body;
@@ -301,19 +302,55 @@ app.post('/payments', authenticateJWT, async (req, res) => {
             return res.status(404).json({ message: 'Booking not found.' });
         }
 
-        // For demonstration, we're using hardcoded values for payment method and status
-        const payment_method = 'credit-card'; // Example
-        const payment_status = 'complete'; // Example
-        const payment_amount = 100.00; // Example, you can calculate or fetch the amount from somewhere
+        // Fetch payment details from each table based on payment method
+        const paymentRecord = await query(`
+            SELECT p.payment_method, p.payment_status, p.payment_amount, 
+                   c.card_number, c.expiry_date, c.cvc, 
+                   pp.payment_email, pp.transaction_id, 
+                   b.bank_name, b.account_number, b.transactions_code, 
+                   m.mpesa_number, m.transaction_code
+            FROM payments p
+            LEFT JOIN credit_card_payments c ON p.id = c.payment_id
+            LEFT JOIN paypal_payments pp ON p.id = pp.payment_id
+            LEFT JOIN bank_transfer_details b ON p.id = b.payment_id
+            LEFT JOIN mpesa_payments m ON p.id = m.payment_id
+            WHERE p.booking_id = ?
+        `, [booking_id]);
 
-        // Insert payment record
-        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, payment_method, payment_status, payment_amount]);
+        if (paymentRecord.length === 0) {
+            return res.status(404).json({ message: 'Payment record not found.' });
+        }
 
-        res.status(201).json({ message: 'Payment record created.' });
+        const paymentDetails = paymentRecord[0];
+
+        res.status(200).json({
+            payment_method: paymentDetails.payment_method,
+            payment_status: paymentDetails.payment_status,
+            payment_amount: paymentDetails.payment_amount,
+            credit_card_details: paymentDetails.card_number ? {
+                card_number: paymentDetails.card_number,
+                expiry_date: paymentDetails.expiry_date,
+                cvc: paymentDetails.cvc
+            } : null,
+            paypal_details: paymentDetails.payment_email ? {
+                payment_email: paymentDetails.payment_email,
+                transaction_id: paymentDetails.transaction_id
+            } : null,
+            bank_transfer_details: paymentDetails.bank_name ? {
+                bank_name: paymentDetails.bank_name,
+                account_number: paymentDetails.account_number,
+                transactions_code: paymentDetails.transactions_code
+            } : null,
+            mpesa_details: paymentDetails.mpesa_number ? {
+                mpesa_number: paymentDetails.mpesa_number,
+                transaction_code: paymentDetails.transaction_code
+            } : null
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating payment record.', error });
+        res.status(500).json({ message: 'Error fetching payment record.', error });
     }
 });
+
 
 // Enquiry route
 app.post('/enquiries', authenticateJWT, async (req, res) => {
@@ -439,50 +476,19 @@ app.post('/protected', isTokenBlacklisted, (req, res) => {
 });
 
 
-// Credit Card Payment route
-app.post('/api/credit-card-payments', (req, res) => {
-    const { bookingId, paymentAmount, cardNumber, expiryDate, cvc } = req.body;
 
-    // Encrypt sensitive data
-    const encryptedCardNumber = encrypt(cardNumber);  // Use the updated encrypt function with IV
-    const encryptedExpiryDate = encrypt(expiryDate);
-    const encryptedCvc = encrypt(cvc);
-
-     // Dynamically use the payment amount passed from the request
-    const insertPaymentQuery = 'INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)';
-    connection.query(insertPaymentQuery, [bookingId, 'credit-card', 'completed', paymentAmount], (err, result) => {
-        if (err) {
-            console.error('Error inserting payment:', err);
-            return res.status(500).json({ message: 'Error processing payment' });
-        }
-
-        const paymentId = result.insertId;
-
-
- // Insert the encrypted card details and store the IV
- const insertCreditCardPaymentQuery = 'INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc, iv) VALUES (?, ?, ?, ?, ?)';
- connection.query(insertCreditCardPaymentQuery, [paymentId, encryptedCardNumber.encryptedData, encryptedExpiryDate.encryptedData, encryptedCvc.encryptedData, encryptedCardNumber.iv], (err) => {
-     if (err) {
-         console.error('Error inserting credit card payment:', err);
-         return res.status(500).json({ message: 'Error processing payment' });
-     } else {
-         res.json({ message: 'Payment processed successfully' });
-     }
- });
-});
-});
 
 
 // Decrypt card data when needed
-app.get('/api/decrypted-card-details/:paymentId', (req, res) => {
+app.get('/decrypted-card-details/:paymentId', async (req, res) => {
     const paymentId = parseInt(req.params.paymentId, 10);
 
-    const query = 'SELECT * FROM credit_card_payments WHERE payment_id = ?';
-    connection.query(query, [paymentId], (err, results) => {
-        if (err) {
-            console.error('Error fetching card details:', err);
-            return res.status(500).json({ message: 'Error fetching card details' });
-        }
+    if (isNaN(paymentId)) {
+        return res.status(400).json({ message: 'Invalid payment ID.' });
+    }
+
+    try {
+        const results = await query('SELECT * FROM credit_card_payments WHERE payment_id = ?', [paymentId]);
 
         if (results.length === 0) {
             return res.status(404).json({ message: 'Payment not found' });
@@ -493,38 +499,50 @@ app.get('/api/decrypted-card-details/:paymentId', (req, res) => {
         const decryptedExpiryDate = decrypt(encryptedData.expiry_date, encryptedData.iv);
         const decryptedCvc = decrypt(encryptedData.cvc, encryptedData.iv);
 
-
         res.json({
             cardNumber: decryptedCardNumber,
             expiryDate: decryptedExpiryDate,
             cvc: decryptedCvc
         });
-    });
+    } catch (error) {
+        console.error('Error fetching card details:', error);
+        res.status(500).json({ message: 'Error fetching card details', error });
+    }
 });
 
-// Example route for handling payments with credit card details
-app.post('credit-card', authenticateJWT, async (req, res) => {
-    const { booking_id, card_number, expiry_date, cvc } = req.body;
 
-    if (!booking_id || !card_number || !expiry_date || !cvc) {
+// Example route for handling payments with credit card details
+app.post('/credit-card-payments', async (req, res) => {
+    console.log('Received data for Credit Card:', req.body); // Log data
+    const { booking_id, payment_amount, card_number, expiry_date, cvc } = req.body;
+
+    if (!booking_id || !payment_amount || !card_number || !expiry_date || !cvc) {
         return res.status(400).json({ message: 'Missing required fields for credit card payment.' });
     }
 
+    // Encrypt sensitive data
+    const encryptedCardNumber = encrypt(card_number);
+    const encryptedExpiryDate = encrypt(expiry_date);
+    const encryptedCvc = encrypt(cvc);
+
     try {
         // Insert payment record
-        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'credit-card', 'pending', 100.00]);
-        
+        const result = await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'credit-card', 'completed', 1000]);
+        const paymentId = result.insertId;
+
         // Insert credit card details
-        await query('INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?, ?)', [booking_id, card_number, expiry_date, cvc]);
+        await query('INSERT INTO credit_card_payments (payment_id, card_number, expiry_date, cvc, iv) VALUES (?, ?, ?, ?, ?)', [paymentId, encryptedCardNumber.encryptedData, encryptedExpiryDate.encryptedData, encryptedCvc.encryptedData, encryptedCardNumber.iv]);
 
         res.status(201).json({ message: 'Credit card payment record created.' });
     } catch (error) {
+        console.error('Error creating credit card payment record:', error);
         res.status(500).json({ message: 'Error creating credit card payment record.', error });
     }
 });
 
 // Example route for handling payments with PayPal
-app.post('paypal', authenticateJWT, async (req, res) => {
+app.post('/paypal-payments', async (req, res) => {
+    console.log('Received data for Paypal:', req.body); // Log data
     const { booking_id, payment_email, transaction_id } = req.body;
 
     if (!booking_id || !payment_email || !transaction_id) {
@@ -533,40 +551,46 @@ app.post('paypal', authenticateJWT, async (req, res) => {
 
     try {
         // Insert payment record
-        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'paypal', 'pending', 100.00]);
-        
+        const result = await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'paypal', 'completed', 1000.00]);
+        const paymentId = result.insertId;
+
         // Insert PayPal details
-        await query('INSERT INTO paypal_payments (payment_id, payment_email, transaction_id) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?)', [booking_id, payment_email, transaction_id]);
+        await query('INSERT INTO paypal_payments (payment_id, payment_email, transaction_id) VALUES (?, ?, ?)', [paymentId, payment_email, transaction_id]);
 
         res.status(201).json({ message: 'PayPal payment record created.' });
     } catch (error) {
+        console.error('Error creating PayPal payment record:', error);
         res.status(500).json({ message: 'Error creating PayPal payment record.', error });
     }
 });
 
 // Example route for handling payments with bank transfer
-app.post('bank-transfer', authenticateJWT, async (req, res) => {
-    const { booking_id, bank_name, account_number, transactions_code } = req.body;
+app.post('/bank-transfer-payments', async (req, res) => {
+    console.log('Received data for Bank transfer:', req.body); // Log data
+    const { booking_id, bank_name, account_number, transactions_code, phone_number } = req.body;
 
-    if (!booking_id || !bank_name || !account_number || !transactions_code) {
+    if (!booking_id || !bank_name || !account_number || !transactions_code || !phone_number) {
         return res.status(400).json({ message: 'Missing required fields for bank transfer payment.' });
     }
 
     try {
         // Insert payment record
-        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'bank-transfer', 'pending', 100.00]);
-        
+        const result = await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'bank-transfer', 'completed', 1000.00]);
+        const paymentId = result.insertId;
+
         // Insert bank transfer details
-        await query('INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, transactions_code) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?, ?)', [booking_id, bank_name, account_number, transactions_code]);
+        await query('INSERT INTO bank_transfer_details (payment_id, bank_name, account_number, transactions_code) VALUES (?, ?, ?, ?)', [paymentId, bank_name, account_number, transactions_code]);
 
         res.status(201).json({ message: 'Bank transfer payment record created.' });
     } catch (error) {
+        console.error('Error creating bank transfer payment record:', error);
         res.status(500).json({ message: 'Error creating bank transfer payment record.', error });
     }
 });
 
-// Example route for handling payments with Mpesa
-app.post('mpesa', authenticateJWT, async (req, res) => {
+// Route for handling payments with Mpesa
+app.post('/mpesa-payments', async (req, res) => {
+    console.log('Received data for Mpesa:', req.body); // Log data
     const { booking_id, mpesa_number, transaction_code } = req.body;
 
     if (!booking_id || !mpesa_number || !transaction_code) {
@@ -575,16 +599,19 @@ app.post('mpesa', authenticateJWT, async (req, res) => {
 
     try {
         // Insert payment record
-        await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'mpesa', 'pending', 100.00]);
-        
+        const result = await query('INSERT INTO payments (booking_id, payment_method, payment_status, payment_amount) VALUES (?, ?, ?, ?)', [booking_id, 'mpesa', 'completed', 1000.00]);
+        const paymentId = result.insertId;
+
         // Insert Mpesa details
-        await query('INSERT INTO mpesa_payments (payment_id, mpesa_number, transaction_code) VALUES ((SELECT id FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1), ?, ?)', [booking_id, mpesa_number, transaction_code]);
+        await query('INSERT INTO mpesa_payments (payment_id, mpesa_number, transaction_code) VALUES (?, ?, ?)', [paymentId, mpesa_number, transaction_code]);
 
         res.status(201).json({ message: 'Mpesa payment record created.' });
     } catch (error) {
+        console.error('Error creating Mpesa payment record:', error);
         res.status(500).json({ message: 'Error creating Mpesa payment record.', error });
     }
 });
+
 
 // Start server
 app.listen(port, () => {

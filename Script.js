@@ -202,10 +202,17 @@ function checkLogin(sectionId) {
     }
 }
 
-
-// Function to handle booking form submission
-
+//Function to handle booking form submission
 document.addEventListener('DOMContentLoaded', function() {
+    // Get the current booking step from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('booking_id'); // Get booking_id from the URL
+
+    if (bookingId) {
+        // Automatically navigate to Step 2 if booking_id exists
+        goToStep(2);
+    }
+
     const bookingForm = document.getElementById('booking-form');
 
     if (bookingForm) {
@@ -240,17 +247,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     }),
                 });
 
-                const data = await response.text();
+                const data = await response.json();
 
                 if (response.ok) {
+                    const bookingId = data.booking_id; // Assuming the server returns the booking ID
+                    localStorage.setItem('booking_id', bookingId); // Store booking ID in localStorage
                     showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
+                    
                     bookingForm.reset(); // Reset the form
+                    // window.location.href = `/payments?booking_id=${bookingId}`; // Redirect to payments page with booking ID
                 } else {
-                    throw new Error(data);  // Handle server-side errors
+                    throw new Error(data.message);  // Handle server-side errors
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification ('There was an error with your booking. Please try again.', 'error');
+                showNotification('There was an error with your booking. Please try again.', 'error');
             }
         });
     }
@@ -457,100 +468,99 @@ function showLoginOptions(option) {
     }
 }
 
-
-
-
-
-
 document.addEventListener('DOMContentLoaded', function () {
     // Attach event listener to the payment method select element
     document.getElementById('payment-method').addEventListener('change', function () {
-        var paymentMethod = this.value;
+        const paymentMethod = this.value;
         showPaymentForm(paymentMethod);
     });
 
     // Show payment info section based on selected payment method
     function showPaymentForm(paymentMethod) {
-        var container = document.getElementById('payment-info-container');
+        const container = document.getElementById('payment-info-container');
         container.innerHTML = ''; // Clear previous content
 
-        if (paymentMethod) {
-            var formHtml = '';
-            switch (paymentMethod) {
-                case 'credit-card':
-                    formHtml = `
-                        <div id="credit-card-info" class="payment-info">
-                            <div class="form-group">
-                                <label for="card-number">Card Number:</label>
-                                <input type="text" id="card-number" name="card-number" placeholder="Enter card number" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="card-expiry">Expiry Date:</label>
-                                <input type="text" id="card-expiry" name="card-expiry" placeholder="MM/YY" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="card-cvc">CVC:</label>
-                                <input type="text" id="card-cvc" name="card-cvc" placeholder="Enter CVC" required>
-                            </div>
-                            <button type="button" class="btn-primary" onclick="submitPayment()">Submit Credit Card Payment</button>
-                        </div>`;
-                    break;
-                case 'paypal':
-                    formHtml = `
-                        <div id="paypal-info" class="payment-info">
-                            <div class="form-group">
-                                <label for="payment-email">PayPal Email:</label>
-                                <input type="email" id="payment-email" name="payment-email" placeholder="Enter PayPal email" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="transaction-id">Transaction ID:</label>
-                                <input type="text" id="transaction-id" name="transaction-id" placeholder="Enter transaction ID" required>
-                            </div>
-                            <button type="button" class="btn-primary" onclick="submitPayment()">Submit PayPal Payment</button>
-                        </div>`;
-                    break;
-                case 'bank-transfer':
-                    formHtml = `
-                        <div id="bank-transfer-info" class="payment-info">
-                            <div class="form-group">
-                                <label for="bank-name">Bank Name:</label>
-                                <input type="text" id="bank-name" name="bank-name" placeholder="Enter bank name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="account-number">Account Number:</label>
-                                <input type="text" id="account-number" name="account-number" placeholder="Enter account number" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="transactions-code">Transaction Code:</label>
-                                <input type="text" id="transactions-code" name="transactions-code" placeholder="Enter transaction code" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="phone-number">Phone Number:</label>
-                                <input type="text" id="phone-number" name="phone-number" placeholder="Enter phone number" required>
-                            </div>
-                            <button type="button" class="btn-primary" onclick="submitPayment()">Submit Bank Transfer Payment</button>
-                        </div>`;
-                    break;
-                case 'mpesa':
-                    formHtml = `
-                        <div id="mpesa-info" class="payment-info">
-                            <div class="form-group">
-                                <label for="mpesa-number">Mpesa Number:</label>
-                                <input type="text" id="mpesa-number" name="mpesa-number" placeholder="Enter Mpesa number" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="transaction-code">Transaction Code:</label>
-                                <input type="text" id="transaction-code" name="transaction-code" placeholder="Enter transaction code" required>
-                            </div>
-                            <button type="button" class="btn-primary" onclick="submitPayment()">Submit Mpesa Payment</button>
-                        </div>`;
-                    break;
-                default:
-                    console.error('Invalid payment method selected');
-                    return;
-            }
-            container.innerHTML = formHtml;
+        let formHtml = '';
+        switch (paymentMethod) {
+            case 'credit-card':
+                formHtml = `
+                    <div id="credit-card-info" class="payment-info">
+                        <div class="form-group">
+                            <label for="card-number">Card Number:</label>
+                            <input type="text" id="card-number" name="card-number" placeholder="Enter card number" pattern="\\d{16}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="card-expiry">Expiry Date:</label>
+                            <input type="text" id="card-expiry" name="card-expiry" placeholder="MM/YY" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="card-cvc">CVC:</label>
+                            <input type="text" id="card-cvc" name="card-cvc" placeholder="Enter CVC" pattern="\\d{3,4}" required>
+                        </div>
+                        <button type="button" class="btn-primary" id="submit-credit-card">Submit Credit Card Payment</button>
+                    </div>`;
+                break;
+            case 'paypal':
+                formHtml = `
+                    <div id="paypal-info" class="payment-info">
+                        <div class="form-group">
+                            <label for="payment-email">PayPal Email:</label>
+                            <input type="email" id="payment-email" name="payment-email" placeholder="Enter PayPal email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-id">Transaction ID:</label>
+                            <input type="text" id="transaction-id" name="transaction-id" placeholder="Enter transaction ID" required>
+                        </div>
+                        <button type="button" class="btn-primary" id="submit-paypal">Submit PayPal Payment</button>
+                    </div>`;
+                break;
+            case 'bank-transfer':
+                formHtml = `
+                    <div id="bank-transfer-info" class="payment-info">
+                        <div class="form-group">
+                            <label for="bank-name">Bank Name:</label>
+                            <input type="text" id="bank-name" name="bank-name" placeholder="Enter bank name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="account-number">Account Number:</label>
+                            <input type="text" id="account-number" name="account-number" placeholder="Enter account number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transactions-code">Transaction Code:</label>
+                            <input type="text" id="transactions-code" name="transactions-code" placeholder="Enter transaction code" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone-number">Phone Number:</label>
+                            <input type="text" id="phone-number" name="phone-number" placeholder="Enter phone number" required>
+                        </div>
+                        <button type="button" class="btn-primary" id="submit-bank-transfer">Submit Bank Transfer Payment</button>
+                    </div>`;
+                break;
+            case 'mpesa':
+                formHtml = `
+                    <div id="mpesa-info" class="payment-info">
+                        <div class="form-group">
+                            <label for="mpesa-number">Mpesa Number:</label>
+                            <input type="tel" id="mpesa-number" name="mpesa-number" placeholder="Enter Mpesa number" pattern="\\d{10}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-code">Transaction Code:</label>
+                            <input type="text" id="transaction-code" name="transaction-code" placeholder="Enter transaction code" required>
+                        </div>
+                        <button type="button" class="btn-primary" id="submit-mpesa">Submit Mpesa Payment</button>
+                    </div>`;
+                break;
+            default:
+                console.error('Invalid payment method selected');
+                return;
         }
+        container.innerHTML = formHtml;
+
+        // Attach event listeners to buttons
+        document.getElementById('submit-credit-card')?.addEventListener('click', submitPayment);
+        document.getElementById('submit-paypal')?.addEventListener('click', submitPayment);
+        document.getElementById('submit-bank-transfer')?.addEventListener('click', submitPayment);
+        document.getElementById('submit-mpesa')?.addEventListener('click', submitPayment);
     }
 
     // Function to handle payment submission
@@ -620,19 +630,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Helper functions to show and hide loader
     function showLoader() {
-        document.getElementById('loader').classList.remove('hidden');
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.remove('hidden');
+        }
     }
 
     function hideLoader() {
-        document.getElementById('loader').classList.add('hidden');
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('hidden');
+        }
     }
 
-    // Save payment methods (example functions, need to be implemented)
+    // Save payment credit card
     async function saveCreditCardPayment(details) {
         const response = await fetch('/credit-card-payments', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify(details),
+            body: JSON.stringify({
+                booking_id: details.bookingId,
+                card_number: details.cardNumber,
+                expiry_date: details.cardExpiry,
+                cvc: details.cardCvc
+            }),
         });
         const result = await response.json();
         if (response.ok) {
@@ -641,12 +662,17 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(`Error: ${result.message}`);
         }
     }
-
+    
+// Save payment Paypal
     async function savePayPalPayment(details) {
         const response = await fetch('/paypal-payments', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify(details),
+            body: JSON.stringify({
+                booking_id: details.bookingId,
+                payment_email: details.paymentEmail,
+                transaction_id: details.transactionId
+            }),   
         });
         const result = await response.json();
         if (response.ok) {
@@ -655,12 +681,18 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(`Error: ${result.message}`);
         }
     }
-
+// Save payment bank transfer
     async function saveBankTransferDetails(details) {
-        const response = await fetch('/bank-transfer-details', {
+        const response = await fetch('/bank-transfer-payments', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify(details),
+            body: JSON.stringify({
+                booking_id: details.bookingId,
+                bank_name: details.bankName,
+                account_number: details.accountNumber,
+                transactions_code: details.transactionsCode,
+                phone_number: details.phoneNumber
+            }),
         });
         const result = await response.json();
         if (response.ok) {
@@ -669,12 +701,17 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(`Error: ${result.message}`);
         }
     }
-
+    
+// Save payment mpesa
     async function saveMpesaPayment(details) {
         const response = await fetch('/mpesa-payments', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify(details),
+            body: JSON.stringify({
+                booking_id: details.bookingId,
+                mpesa_number: details.mpesaNumber,
+                transaction_code: details.mpesaTransactionCode
+            }),
         });
         const result = await response.json();
         if (response.ok) {
@@ -683,12 +720,13 @@ document.addEventListener('DOMContentLoaded', function () {
             alert(`Error: ${result.message}`);
         }
     }
+    
 
-    // Helper function to get headers with token
+    // Get headers with Authorization if needed
     function getHeaders() {
         return {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            // 'Authorization': 'Bearer ' + localStorage.getItem('token') // Example
         };
     }
 });
