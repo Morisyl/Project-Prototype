@@ -59,6 +59,9 @@ const connection = mysql.createConnection({
     password: process.env.DB_PASSWORD
 });
 
+// Promisify query for easier usage with async/await
+const query = promisify(connection.query).bind(connection);
+
 // Connect to the MySQL server
 connection.connect(err => {
     if (err) {
@@ -95,6 +98,7 @@ connection.connect(err => {
     });
 });
 
+
 // Function to setup the database and create tables
 async function setupDatabase() {
     return new Promise((resolve, reject) => {
@@ -106,8 +110,7 @@ async function setupDatabase() {
             }
             console.log('Connected to MySQL database.');
 
-            // Promisify query for easier usage with async/await
-            const query = promisify(connection.query).bind(connection);
+           
 
             // Create tables if they don't exist
             const createTables = async () => {
@@ -162,15 +165,16 @@ async function setupDatabase() {
                     `;
 
                     const createCreditCardPaymentsTable = `
-                        CREATE TABLE IF NOT EXISTS credit_card_payments (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            payment_id INT,
-                            card_number VARCHAR(20) NOT NULL,
-                            expiry_date VARCHAR(5) NOT NULL,
-                            cvc VARCHAR(4) NOT NULL,
-                            FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
-                        )
-                    `;
+                           CREATE TABLE IF NOT EXISTS credit_card_payments (
+                           id INT AUTO_INCREMENT PRIMARY KEY,
+                           payment_id INT,
+                           card_number TEXT NOT NULL,
+                           expiry_date TEXT NOT NULL,
+                           cvc TEXT NOT NULL,
+                           iv VARCHAR(32) NOT NULL,  -- Add the column for the initialization vector (if used)
+                           FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+                       )
+                     `;
 
                     const createBankTransferDetailsTable = `
                         CREATE TABLE IF NOT EXISTS bank_transfer_details (
@@ -233,7 +237,6 @@ setupDatabase().catch(error => {
     console.error('Error setting up database:', error);
 });
 
-
 // Middleware Encryption configuration
 const algorithm = 'aes-256-cbc';
 const encryptionKey = process.env.ENCRYPTION_KEY; // 32 bytes
@@ -284,7 +287,6 @@ app.post('/booking', authenticateJWT, (req, res) => {
         }
     });
 });
-
 
 // Route to handle payment creation
 app.post('/payments', authenticateJWT, async (req, res) => {
@@ -351,7 +353,6 @@ app.post('/payments', authenticateJWT, async (req, res) => {
     }
 });
 
-
 // Enquiry route
 app.post('/enquiries', authenticateJWT, async (req, res) => {
     const { name, email, message } = req.body;
@@ -374,8 +375,6 @@ app.post('/enquiries', authenticateJWT, async (req, res) => {
         res.status(500).json({ message: 'Error saving enquiry', error: err.message });
     }
 });
-
-
 
 // Register Route
 app.post('/register', async (req, res) => {
@@ -475,10 +474,6 @@ app.post('/protected', isTokenBlacklisted, (req, res) => {
     });
 });
 
-
-
-
-
 // Decrypt card data when needed
 app.get('/decrypted-card-details/:paymentId', async (req, res) => {
     const paymentId = parseInt(req.params.paymentId, 10);
@@ -511,12 +506,13 @@ app.get('/decrypted-card-details/:paymentId', async (req, res) => {
 });
 
 
-// Example route for handling payments with credit card details
 app.post('/credit-card-payments', async (req, res) => {
     console.log('Received data for Credit Card:', req.body); // Log data
-    const { booking_id, payment_amount, card_number, expiry_date, cvc } = req.body;
+    const { booking_id,card_number, expiry_date, cvc } = req.body;
 
-    if (!booking_id || !payment_amount || !card_number || !expiry_date || !cvc) {
+    console.log('Extracted data:', { booking_id, card_number, expiry_date, cvc });
+
+    if (!booking_id || !card_number || !expiry_date || !cvc) {
         return res.status(400).json({ message: 'Missing required fields for credit card payment.' });
     }
 
@@ -540,7 +536,8 @@ app.post('/credit-card-payments', async (req, res) => {
     }
 });
 
-// Example route for handling payments with PayPal
+
+// Route for handling payments with PayPal
 app.post('/paypal-payments', async (req, res) => {
     console.log('Received data for Paypal:', req.body); // Log data
     const { booking_id, payment_email, transaction_id } = req.body;
@@ -560,11 +557,11 @@ app.post('/paypal-payments', async (req, res) => {
         res.status(201).json({ message: 'PayPal payment record created.' });
     } catch (error) {
         console.error('Error creating PayPal payment record:', error);
-        res.status(500).json({ message: 'Error creating PayPal payment record.', error });
+        res.status(500).json({ message: 'Error creating PayPal payment record.', error: error.message });
     }
 });
 
-// Example route for handling payments with bank transfer
+// Route for handling payments with bank transfer
 app.post('/bank-transfer-payments', async (req, res) => {
     console.log('Received data for Bank transfer:', req.body); // Log data
     const { booking_id, bank_name, account_number, transactions_code, phone_number } = req.body;
@@ -617,4 +614,3 @@ app.post('/mpesa-payments', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
-

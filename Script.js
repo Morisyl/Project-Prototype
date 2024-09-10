@@ -643,90 +643,120 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Save payment credit card
-    async function saveCreditCardPayment(details) {
-        const response = await fetch('/credit-card-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                booking_id: details.bookingId,
-                card_number: details.cardNumber,
-                expiry_date: details.cardExpiry,
-                cvc: details.cardCvc
-            }),
-        });
-        const result = await response.json();
-        if (response.ok) {
-            alert('Credit Card payment processed successfully.');
-        } else {
-            alert(`Error: ${result.message}`);
-        }
+   // Save payment credit card
+async function saveCreditCardPayment(details) {
+    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    if (!bookingId) {
+        alert('No booking ID found.');
+        return;
     }
-    
-// Save payment Paypal
-    async function savePayPalPayment(details) {
-        const response = await fetch('/paypal-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                booking_id: details.bookingId,
-                payment_email: details.paymentEmail,
-                transaction_id: details.transactionId
-            }),   
-        });
-        const result = await response.json();
-        if (response.ok) {
-            alert('PayPal payment processed successfully.');
-        } else {
-            alert(`Error: ${result.message}`);
-        }
-    }
-// Save payment bank transfer
-    async function saveBankTransferDetails(details) {
-        const response = await fetch('/bank-transfer-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                booking_id: details.bookingId,
-                bank_name: details.bankName,
-                account_number: details.accountNumber,
-                transactions_code: details.transactionsCode,
-                phone_number: details.phoneNumber
-            }),
-        });
-        const result = await response.json();
-        if (response.ok) {
-            alert('Bank Transfer payment processed successfully.');
-        } else {
-            alert(`Error: ${result.message}`);
-        }
-    }
-    
-// Save payment mpesa
-    async function saveMpesaPayment(details) {
-        const response = await fetch('/mpesa-payments', {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                booking_id: details.bookingId,
-                mpesa_number: details.mpesaNumber,
-                transaction_code: details.mpesaTransactionCode
-            }),
-        });
-        const result = await response.json();
-        if (response.ok) {
-            alert('Mpesa payment processed successfully.');
-        } else {
-            alert(`Error: ${result.message}`);
-        }
-    }
-    
 
+    const response = await fetch('/credit-card-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            booking_id: bookingId,  // Include booking_id in the request body
+            card_number: details.cardNumber,
+            expiry_date: details.cardExpiry,
+            cvc: details.cardCvc
+        }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+        alert('Credit Card payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
+    }
+}
+
+// Save payment PayPal
+async function savePayPalPayment(details) {
+    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    if (!bookingId) {
+        alert('No booking ID found.');
+        return;
+    }
+
+    const response = await fetch('/paypal-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            booking_id: bookingId,  // Include booking_id in the request body
+            payment_email: details.paymentEmail,
+            transaction_id: details.transactionId
+        }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+        alert('PayPal payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
+    }
+}
+
+// Save payment bank transfer
+async function saveBankTransferDetails(details) {
+    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    if (!bookingId) {
+        alert('No booking ID found.');
+        return;
+    }
+
+    const response = await fetch('/bank-transfer-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            booking_id: bookingId,  // Include booking_id in the request body
+            bank_name: details.bankName,
+            account_number: details.accountNumber,
+            transactions_code: details.transactionsCode,
+            phone_number: details.phoneNumber
+        }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+        alert('Bank Transfer payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
+    }
+}
+
+    
+// Save payment Mpesa
+async function saveMpesaPayment(details) {
+    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    if (!bookingId) {
+        alert('No booking ID found.');
+        return;
+    }
+
+    const response = await fetch('/mpesa-payments', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+            booking_id: bookingId,  // Include booking_id in the request body
+            mpesa_number: details.mpesaNumber,
+            transaction_code: details.mpesaTransactionCode
+        }),
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+        alert('Mpesa payment processed successfully.');
+    } else {
+        alert(`Error: ${result.message}`);
+    }
+}
+
+    
     // Get headers with Authorization if needed
     function getHeaders() {
         return {
             'Content-Type': 'application/json',
-            // 'Authorization': 'Bearer ' + localStorage.getItem('token') // Example
+            // 'Authorization': 'Bearer ' + localStorage.getItem('token')
         };
     }
 });
