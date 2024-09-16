@@ -3,135 +3,177 @@ document.addEventListener('DOMContentLoaded', function () {
     showSection('home'); // Show the home section by default on page load
     shiftSectionsAutomatically(); // Start shifting through sections automatically
 
-    // Check if the user is logged in
-    const isLoggedIn = localStorage.getItem('loggedIn') === 'true';
-    toggleForms(isLoggedIn);
+    // Function to check if the user is logged in by checking cookies
+    async function checkLoginStatus() {
+        try {
+            const response = await fetch('/check-login', { method: 'GET', credentials: 'include' });
+
+            if (response.ok) {
+                const data = await response.json();
+                toggleForms(data.loggedIn);
+            } else {
+                toggleForms(false);
+            }
+        } catch (error) {
+            console.error('Error checking login status:', error);
+            toggleForms(false);
+        }
+    }
+
+    // Check if the user is logged in on page load
+    checkLoginStatus();
+
+   
 
     document.getElementById('login-form')?.addEventListener('submit', async function (event) {
         event.preventDefault();
-    
+
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-    
+
         try {
             const response = await fetch('/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include cookies in the request
                 body: JSON.stringify({ email, password }),
             });
-    
-            const data = await response.json();
-    
-            if (data.token) {
-                // Store token and login status
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('loggedIn', 'true');
-    
-                // Update UI
+
+            if (response.ok) {
                 showNotification('Login successful!', 'success');
                 toggleForms(true);
-    
-                // Redirect to the home section
                 window.location.hash = '#home';
-                showSection('home');  // Ensure the home section is visible
+                showSection('home');
             } else {
-                showNotification('Invalid username or password. Please try again.', 'error');
+                const data = await response.json();
+                showNotification(data.message || 'Invalid username or password. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
             showNotification('There was an error with your login. Please try again.', 'error');
         }
     });
-    
-  
-/// Function to show a section based on ID
-function showSection(sectionId) {
-    console.log("Showing section: " + sectionId);
-    // Logic to show/hide sections based on sectionId
-    const sections = document.querySelectorAll('.section'); // Assuming all sections have a class of 'section'
-    sections.forEach(section => {
-        if (section.id === sectionId) {
-            section.classList.remove('hidden');
-        } else {
-            section.classList.add('hidden');
-        }
-    });
-}
 
-// Function to check if user is logged in before showing certain sections
-function checkLogin(sectionId) {
-    const token = localStorage.getItem('token');
-    if (token && isValidToken(token)) {
+    // Function to show a section based on ID
+    function showSection(sectionId) {
+        console.log("Showing section: " + sectionId);
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(section => {
+            section.id === sectionId ? section.classList.remove('hidden') : section.classList.add('hidden');
+        });
+    }
+
+    // Function to check if user is logged in before showing certain sections
+function checkLoginStatus(sectionId) {
+    // Extract token from cookies
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='));
+
+    // If a token exists, split and check if it is valid
+    if (token && isValidToken(token.split('=')[1])) {
+        // Show the requested section
         showSection(sectionId);
     } else {
-        showNotification("You need to log in to access this section.",'error');
+        // Notify the user and show the registration section if not logged in
+        showNotification("You need to log in to access this section.", 'error');
         showSection('register');
     }
 }
 
-// Event listener for the logout link click event
-document.getElementById('logout-link')?.addEventListener('click', async function (event) {
-    event.preventDefault(); // Prevent default anchor behavior
+// Helper function to validate JWT (adjust as per your actual validation logic)
+function isValidToken(token) {
+    // Here you would typically verify the token with a server or decode it
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1])); // Decode JWT payload
+        const expiry = payload.exp * 1000; // Token expiration time
+        return Date.now() < expiry; // Check if the token has expired
+    } catch (e) {
+        console.error("Invalid token:", e);
+        return false; // If decoding fails or token is invalid
+    }
+}
 
-    // Call the logout function when the user clicks the logout link
-    await logoutUser();
+
+    // Event listener for the logout link click event
+    document.getElementById('logout-link')?.addEventListener('click', async function (event) {
+        event.preventDefault();
+
+        // Call the logout function when the user clicks the logout link
+        await logoutUser();
+    });
 });
 
+ // Utility function to set a cookie with a specified expiration time
+ function setCookie(name, value, minutes) {
+    let expires = "";
+    if (minutes) {
+        const date = new Date();
+        date.setTime(date.getTime() + (minutes * 60 * 1000)); // Convert minutes to milliseconds
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = `${name}=${value || ""}${expires}; path=/`;
+}
+
+// Utility function to get a cookie by name
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        return parts.pop().split(';').shift();
+    }
+    return null; // Cookie not found
+}
+
+
 function userLoggedIn(token) {
-    localStorage.setItem('userLoggedIn', 'true');
-    localStorage.setItem('token', token);  // Store JWT or token
+    document.cookie = `userLoggedIn=true; path=/`; // Use cookies instead of localStorage
+    document.cookie = `token=${token}; path=/; HttpOnly`;  // Store JWT token in a cookie
     document.getElementById('register-link').classList.add('hidden');
     document.getElementById('logout-link').classList.remove('hidden');
     showSection('home'); // Show home section
 }
 
 async function logoutUser() {
-    const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-
     try {
         // Make an API call to log out (blacklist token on the server-side)
         await fetch('/logout', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+            credentials: 'include', // Include cookies
         });
 
-        // If successful, clear localStorage and update UI
-        localStorage.removeItem('userLoggedIn');
-        localStorage.removeItem('token');
-        showNotification("You have been logged out.",'error');
+        // Clear cookies and update UI after logging out
+        document.cookie = 'userLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        showNotification("You have been logged out.", 'success');
+        toggleForms(false);
 
-        // Update the UI to reflect the logged-out state
-        document.getElementById('logout-link').classList.add('hidden');
-        document.getElementById('register-link').classList.remove('hidden');
-
-        // Redirect to the home section
-        showSection('home');
+        // Redirect to the login section
+        showSection('login');
     } catch (error) {
         console.error('Error during logout:', error);
-        showNotification("There was an issue logging out. Please try again.",'info');
+        showNotification("There was an issue logging out. Please try again.", 'error');
+    }
+}
+
+// Function to toggle forms based on login status
+function toggleForms(isLoggedIn) {
+    if (isLoggedIn) {
+        document.getElementById('register-link').classList.add('hidden');
+        document.getElementById('logout-link').classList.remove('hidden');
+        showSection('home'); 
+    } else {
+        document.getElementById('logout-link').classList.add('hidden');
+        document.getElementById('register-link').classList.remove('hidden');
+        showSection('register');
     }
 }
 
 // Check for user login status on page load
 document.addEventListener("DOMContentLoaded", function() {
-    if (localStorage.getItem('userLoggedIn') && localStorage.getItem('token')) {
-        // If the user is logged in, make sure to reflect that in the UI
-        userLoggedIn(localStorage.getItem('token'));
-    } else {
-        // If the user is not logged in, show the registration section
-        showSection('register');
-    }
+    checkLoginStatus(); // Re-check login status on page load
 });
 
-// Simulate checking the login status on page load
-document.addEventListener("DOMContentLoaded", function() {
-    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
-    toggleForms(isLoggedIn);  // Call toggleForms based on the login status
-});
 
 
  // Event listener for register form submission
@@ -176,7 +218,7 @@ document.getElementById('register-form')?.addEventListener('submit', async funct
         console.error('Error:', error);
         showNotification('There was an error with your registration. Please try again.', 'error');
     }
-});
+
     // Event listeners for login options
     document.getElementById('register-link')?.addEventListener('click', function (event) {
         event.preventDefault();
@@ -188,23 +230,32 @@ document.getElementById('register-form')?.addEventListener('submit', async funct
         showLoginOptions('login');
     });
 
-    // Initial section to show
-    showSection(localStorage.getItem('loggedIn') === 'true' ? 'home' : 'logout');
+  // Initial section to show
+
+    const loggedIn = document.cookie.split('; ').find(row => row.startsWith('userLoggedIn='));
+    showSection(loggedIn && loggedIn.split('=')[1] === 'true' ? 'home' : 'logout');
 });
 
+
+
 // Function to check login status before showing section
-function checkLogin(sectionId) {
-    if (localStorage.getItem('loggedIn') !== 'true') {
+function checkLoginStatus(sectionId) {
+    const loggedIn = getCookie('userLoggedIn');
+    
+    if (loggedIn !== 'true') {
         showNotification('You must be logged in to access this section.', 'error');
-        showSection('register'); // Show the register section
+        showSection('register'); // Redirect to registration if not logged in
+        return false; // Indicate login check failed
     } else {
-        showSection(sectionId);
+        showSection(sectionId); // Show the requested section if logged in
+        return true; // Indicate login check succeeded
     }
 }
 
-//Function to handle booking form submission
+
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Get the current booking step from URL or localStorage
+    // Get the current booking step from URL or cookies
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('booking_id'); // Get booking_id from the URL
 
@@ -216,59 +267,60 @@ document.addEventListener('DOMContentLoaded', function() {
     const bookingForm = document.getElementById('booking-form');
 
     if (bookingForm) {
-        bookingForm.addEventListener('submit', async function (event) {
-            event.preventDefault(); // Prevent the default form submission behavior
+  // Form submission event listener
+document.getElementById('booking-form')?.addEventListener('submit', async function (event) {
+    event.preventDefault(); // Prevent the default form submission behavior
 
-            console.log("Form submitted!");  // Debugging line
+    console.log("Form submitted!");  // Debugging line
 
-            // Collect form values
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const phone_number = document.getElementById('phone_number').value;
-            const gender = document.getElementById('gender').value;
-            const service = document.getElementById('service').value;
-            const details = document.getElementById('details').value;
+    // Collect form values
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const phone_number = document.getElementById('phone_number').value;
+    const gender = document.getElementById('gender').value;
+    const service = document.getElementById('service').value;
+    const details = document.getElementById('details').value;
 
-            try {
-                // Submit form data
-                const response = await fetch('/booking', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    },
-                    body: JSON.stringify({
-                        name,
-                        email,
-                        phone_number,
-                        gender,
-                        service,
-                        details,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    const bookingId = data.booking_id; // Assuming the server returns the booking ID
-                    localStorage.setItem('booking_id', bookingId); // Store booking ID in localStorage
-                    showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
-                    
-                    bookingForm.reset(); // Reset the form
-                    // window.location.href = `/payments?booking_id=${bookingId}`; // Redirect to payments page with booking ID
-                } else {
-                    throw new Error(data.message);  // Handle server-side errors
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showNotification('There was an error with your booking. Please try again.', 'error');
-            }
+    try {
+        // Submit form data to the server
+        const response = await fetch('/booking', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('token')}`, // Use cookie for token
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                phone_number,
+                gender,
+                service,
+                details,
+            }),
         });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            const bookingId = data.booking_id; // Assuming the server returns the booking ID
+            setCookie('booking_id', bookingId, 15); // Store booking ID in a cookie for 15 minutes
+            showNotification(`Thank you ${name} for booking a ${service} service! We will contact you at ${email}.`, 'success');
+            
+            // Reset the form and move to Step 2 (e.g., for payment)
+            bookingForm.reset();
+            goToStep(2); // Automatically move to Step 2 after booking is done
+        } else {
+            throw new Error(data.message);  // Handle server-side errors
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error with your booking. Please try again.', 'error');
     }
 });
 
+       
+    }
 
-document.addEventListener("DOMContentLoaded", function () {
     // Function to move to a specific step
     function goToStep(stepNumber) {
         const currentStep = document.querySelector('.step.active');
@@ -314,28 +366,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-
-// Function to handle enquiry form submission
+// Handle form submission for enquiries
 document.getElementById('enquiries-form')?.addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    if (localStorage.getItem('loggedIn') !== 'true') {
+    const token = getCookie('token'); // Use utility function to get the token
+    if (!token) {
         showNotification('You must be logged in to make an enquiry.', 'error');
         showSection('login'); // Show the login section
         return;
     }
+
     const name = document.getElementById('enquiry-name').value;
     const email = document.getElementById('enquiry-email').value;
     const message = document.getElementById('enquiry-message').value;
-
-    console.log('Submitting enquiry:', { name, email, message });
 
     try {
         const response = await fetch('/enquiries', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${token}`, // Use cookie for token
             },
             body: JSON.stringify({ name, email, message }),
         });
@@ -343,12 +394,10 @@ document.getElementById('enquiries-form')?.addEventListener('submit', async func
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Server Error:', errorText);
-            throw new Error('Network response was not ok');
+            throw new Error(errorText || 'Network response was not ok');
         }
 
         const result = await response.json();
-        console.log('Server response:', result);
-
         showNotification(`Thank you ${name} for your enquiry! We will respond to you at ${email}.`, 'success');
         document.getElementById('enquiries-form').reset();
     } catch (error) {
@@ -356,7 +405,6 @@ document.getElementById('enquiries-form')?.addEventListener('submit', async func
         showNotification('There was an error with your enquiry. Please try again.', 'error');
     }
 });
-
 // Function to dynamically update client list (for demonstration purposes)
 const clients = [
     { name: 'Client A', project: 'Web Development' },
@@ -409,6 +457,7 @@ function shiftSectionsAutomatically() {
     });
 }
 
+// Function to toggle forms based on login status
 function toggleForms(isLoggedIn) {
     const bookingSection = document.getElementById('booking');
     const enquiriesSection = document.getElementById('enquiries');
@@ -430,6 +479,11 @@ function toggleForms(isLoggedIn) {
     } else {
         console.error("Some elements are missing in the DOM.");
     }
+
+
+// Initialize automatic section shifting
+shiftSectionsAutomatically();
+
 }
 // Function to show notifications
 function showNotification(message, type = 'info') {
@@ -643,121 +697,154 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-   // Save payment credit card
+  // Utility function to get cookies
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Save payment credit card
 async function saveCreditCardPayment(details) {
-    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    const bookingId = getCookie('booking_id');  // Retrieve booking_id from cookies
+    const token = getCookie('token');  // Retrieve token from cookies
+
     if (!bookingId) {
-        showNotification('No booking ID found.','error');
+        showNotification('No booking ID found.', 'error');
         return;
     }
 
-    const response = await fetch('/credit-card-payments', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-            booking_id: bookingId,  // Include booking_id in the request body
-            card_number: details.cardNumber,
-            expiry_date: details.cardExpiry,
-            cvc: details.cardCvc
-        }),
-    });
+    try {
+        const response = await fetch('/credit-card-payments', {
+            method: 'POST',
+            headers: getHeaders(),  // Use the headers function
+            body: JSON.stringify({
+                booking_id: bookingId,  // Include booking_id in the request body
+                card_number: details.cardNumber,
+                expiry_date: details.cardExpiry,
+                cvc: details.cardCvc
+            }),
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-        showNotification('Credit Card payment processed successfully.','success');
-    } else {
-        showNotification(`Error: ${result.message}`,'error');
+        const result = await response.json();
+        if (response.ok) {
+            showNotification('Credit Card payment processed successfully.', 'success');
+        } else {
+            showNotification(`Error: ${result.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error processing your payment. Please try again.', 'error');
     }
 }
 
 // Save payment PayPal
 async function savePayPalPayment(details) {
-    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    const bookingId = getCookie('booking_id');  // Retrieve booking_id from cookies
+    const token = getCookie('token');  // Retrieve token from cookies
+
     if (!bookingId) {
-        showNotification('No booking ID found.','error');
+        showNotification('No booking ID found.', 'error');
         return;
     }
 
-    const response = await fetch('/paypal-payments', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-            booking_id: bookingId,  // Include booking_id in the request body
-            payment_email: details.paymentEmail,
-            transaction_id: details.transactionId
-        }),
-    });
+    try {
+        const response = await fetch('/paypal-payments', {
+            method: 'POST',
+            headers: getHeaders(),  // Use the headers function
+            body: JSON.stringify({
+                booking_id: bookingId,  // Include booking_id in the request body
+                payment_email: details.paymentEmail,
+                transaction_id: details.transactionId
+            }),
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-        showNotification( 'PayPal payment processed successfully.','success');
-    } else {
-        showNotification( `Error: ${result.message}`,'error');
+        const result = await response.json();
+        if (response.ok) {
+            showNotification('PayPal payment processed successfully.', 'success');
+        } else {
+            showNotification(`Error: ${result.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error processing your PayPal payment. Please try again.', 'error');
     }
 }
 
 // Save payment bank transfer
 async function saveBankTransferDetails(details) {
-    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    const bookingId = getCookie('booking_id');  // Retrieve booking_id from cookies
+    const token = getCookie('token');  // Retrieve token from cookies
+
     if (!bookingId) {
-        showNotification('No booking ID found.','error');
+        showNotification('No booking ID found.', 'error');
         return;
     }
 
-    const response = await fetch('/bank-transfer-payments', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-            booking_id: bookingId,  // Include booking_id in the request body
-            bank_name: details.bankName,
-            account_number: details.accountNumber,
-            transactions_code: details.transactionsCode,
-            phone_number: details.phoneNumber
-        }),
-    });
+    try {
+        const response = await fetch('/bank-transfer-payments', {
+            method: 'POST',
+            headers: getHeaders(),  // Use the headers function
+            body: JSON.stringify({
+                booking_id: bookingId,  // Include booking_id in the request body
+                bank_name: details.bankName,
+                account_number: details.accountNumber,
+                transactions_code: details.transactionsCode,
+                phone_number: details.phoneNumber
+            }),
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-        showNotification( 'Bank Transfer payment processed successfully.','success');
-    } else {
-        showNotification( `Error: ${result.message}`,'error');
+        const result = await response.json();
+        if (response.ok) {
+            showNotification('Bank Transfer payment processed successfully.', 'success');
+        } else {
+            showNotification(`Error: ${result.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error processing your Bank Transfer payment. Please try again.', 'error');
     }
 }
 
-    
 // Save payment Mpesa
 async function saveMpesaPayment(details) {
-    const bookingId = localStorage.getItem('booking_id');  // Retrieve booking_id from localStorage
+    const bookingId = getCookie('booking_id');  // Retrieve booking_id from cookies
+    const token = getCookie('token');  // Retrieve token from cookies
+
     if (!bookingId) {
-        showNotification('No booking ID found.','error');
+        showNotification('No booking ID found.', 'error');
         return;
     }
 
-    const response = await fetch('/mpesa-payments', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-            booking_id: bookingId,  // Include booking_id in the request body
-            mpesa_number: details.mpesaNumber,
-            transaction_code: details.mpesaTransactionCode
-        }),
-    });
+    try {
+        const response = await fetch('/mpesa-payments', {
+            method: 'POST',
+            headers: getHeaders(),  // Use the headers function
+            body: JSON.stringify({
+                booking_id: bookingId,  // Include booking_id in the request body
+                mpesa_number: details.mpesaNumber,
+                transaction_code: details.mpesaTransactionCode
+            }),
+        });
 
-    const result = await response.json();
-    if (response.ok) {
-        showNotification('Mpesa payment processed successfully.','success');
-    } else {
-        showNotification(`Error: ${result.message}`,'error');
+        const result = await response.json();
+        if (response.ok) {
+            showNotification('Mpesa payment processed successfully.', 'success');
+        } else {
+            showNotification(`Error: ${result.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('There was an error processing your Mpesa payment. Please try again.', 'error');
     }
 }
 
-
-    
-    // Get headers with Authorization if needed
-    function getHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-        };
-    }
+// Get headers with Authorization if needed
+function getHeaders() {
+    const token = getCookie('token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // Retrieve token from cookies
+    };
+}
 });

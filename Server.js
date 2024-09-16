@@ -1,22 +1,25 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const path = require('path');
 const helmet = require('helmet');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const ms = require('ms');
 const { promisify } = require('util');
 const crypto = require('crypto');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // JWT authentication middleware
 const authenticateJWT = (req, res, next) => {
-    const authHeader = req.headers['authorization']; // Get the Authorization header
-    const token = authHeader && authHeader.split(' ')[1];
+    // Extract token from cookies
+    const token = req.cookies.token;
 
     if (token == null) { 
         return res.status(401).json({ message: 'No token provided' }); // No token, unauthorized
@@ -36,7 +39,7 @@ const authenticateJWT = (req, res, next) => {
 const blacklistedTokens = [];
 
 function isTokenBlacklisted(req, res, next) {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.cookies.token;
     if (blacklistedTokens.includes(token)) {
         return res.status(401).json({ message: 'Token is blacklisted.' });
     }
@@ -48,6 +51,9 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname)));
 app.use(helmet());
 app.use(cors());
+app.use(cookieParser());
+
+// Apply JWT authentication middleware to routes
 app.use('/booking', authenticateJWT);
 app.use('/enquiries', authenticateJWT);
 app.use('/payments', authenticateJWT);
@@ -271,6 +277,7 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+
 // Booking route
 app.post('/booking', authenticateJWT, (req, res) => {
     const { name, email, gender, phone_number, service, details } = req.body;
@@ -420,59 +427,94 @@ app.post('/register', async (req, res) => {
     }
 });
 
+
+
+// Define the login rate limiter middleware
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 login requests per windowMs
+    message: 'Too many login attempts from this IP, please try again after 15 minutes',
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
 // Login route
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body;
 
     const query = 'SELECT * FROM users WHERE email = ?';
     connection.query(query, [email], async (err, results) => {
         if (err) {
-            console.error('Error fetching user:', err);
-            return res.status(500).json({ message: 'Error logging in' });
+            console.error('Database error:', err);
+            return res.status(500).json({ message: 'An error occurred. Please try again later.' });
         }
 
-        if (results.length === 0) {  // Explicitly check if no user is found
+        if (results.length === 0) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-    
+
         const user = results[0];
         const match = await bcrypt.compare(password, user.password);
 
         if (match) {
+            // Create JWT token with 1 hour expiration
             const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-            console.log('User found:', user); // Log user info before responding
-            console.log('Password match:', match); // Log match status
-            res.json({ token });
+            
+            // Store the JWT in an HTTP-only cookie with 1 hour expiration
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                expires: new Date(Date.now() + ms('1h'))
+            });
+            res.json({ message: 'Login successful' });
         } else {
-            console.log('Invalid password attempt for user:', email); // Log failed login attempt
             res.status(400).json({ message: 'Invalid email or password' });
         }
     });
 });
-// Logout endpoint: Blacklists the token
+
 app.post('/logout', (req, res) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(400).json({ message: 'Token is required for logout' });
-    }
-
-    // Blacklist the token
-    blacklistedTokens.push(token);
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict'
+    });
     res.json({ message: 'Successfully logged out' });
 });
 
-// Example protected route with blacklist check
+
+app.get('/check-login', (req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        console.log('No token found');
+        return res.json({ loggedIn: false });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            console.log('Token verification failed:', err);
+            return res.json({ loggedIn: false });
+        }
+
+        console.log('Token verified, user:', user);
+        res.json({ loggedIn: true });
+    });
+});
+
+
+// Protected route with blacklist check
 app.post('/protected', isTokenBlacklisted, (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
-    jwt.verify(token, 'secretkey', (err, user) => {
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
         res.json({ message: `Hello, ${user.email}. You accessed a protected route!` });
     });
 });
+
 
 // Decrypt card data when needed
 app.get('/decrypted-card-details/:paymentId', async (req, res) => {
@@ -552,7 +594,7 @@ app.post('/paypal-payments', async (req, res) => {
         const paymentId = result.insertId;
 
         // Insert PayPal details
-        await query('INSERT INTO paypal_payments (payment_id, payment_email, transaction_id) VALUES (?, ?, ?)', [paymentId, payment_email, transaction_id]);
+        await query('INSERT INTO paypal_payments (payment_id, payment_email, transaction_id,paypal_status) VALUES (?, ?, ?, ?)', [paymentId, payment_email, transaction_id,'completed']);
 
         res.status(201).json({ message: 'PayPal payment record created.' });
     } catch (error) {
